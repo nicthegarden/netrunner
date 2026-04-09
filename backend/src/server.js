@@ -14,9 +14,14 @@ import { config } from './config/index.js';
 import { connectDB, getDBStatus } from './config/database.js';
 import './config/passport.js'; // Initialize Passport strategies
 import authRoutes from './routes/auth.js';
-// import playerRoutes from './routes/players.js';
-// import guildRoutes from './routes/guilds.js';
-// import leaderboardRoutes from './routes/leaderboards.js';
+import playerRoutes from './routes/players.js';
+import guildRoutes from './routes/guilds.js';
+import leaderboardRoutes from './routes/leaderboards.js';
+import pvpRoutes from './routes/pvp.js';
+import eventRoutes from './routes/events.js';
+import { initializeSocketHandlers } from './utils/socketHandlers.js';
+import { initializeBots, startBotActivityLoop } from './utils/botManager.js';
+import { initializeEventScheduler, stopEventScheduler } from './utils/eventScheduler.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -92,9 +97,11 @@ app.get('/api/status', (req, res) => {
 
 // API Routes
 app.use('/auth', authRoutes);
-// app.use('/api/players', playerRoutes);
-// app.use('/api/guilds', guildRoutes);
-// app.use('/api/leaderboards', leaderboardRoutes);
+app.use('/api/players', playerRoutes);
+app.use('/api/guilds', guildRoutes);
+app.use('/api/leaderboards', leaderboardRoutes);
+app.use('/api/pvp', pvpRoutes);
+app.use('/api/events', eventRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -114,23 +121,7 @@ app.use((err, req, res, next) => {
 // Socket.io Setup
 // ===================
 
-io.on('connection', (socket) => {
-  console.log(`✓ Player connected: ${socket.id}`);
-
-  // Connection event
-  socket.emit('connected', { message: 'Welcome to NETRUNNER Multiplayer!' });
-
-  // Disconnect event
-  socket.on('disconnect', () => {
-    console.log(`✗ Player disconnected: ${socket.id}`);
-  });
-
-  // TODO: Add event handlers for:
-  // - PvP duels (challenge, accept, fight)
-  // - Guild wars (damage updates, victory)
-  // - Player updates (game sync)
-  // - Chat/notifications
-});
+initializeSocketHandlers(io);
 
 // ===================
 // Server Startup
@@ -144,6 +135,23 @@ export async function startServer() {
     console.log('📡 Connecting to database...');
     await connectDB();
 
+    // Initialize bot system
+    if (config.features.bots) {
+      console.log('🤖 Initializing bot system...');
+      await initializeBots();
+    }
+
+    // Initialize event scheduler
+    if (config.features.events) {
+      console.log('📅 Initializing event scheduler...');
+      await initializeEventScheduler(io);
+    }
+
+    // Start bot activity loop
+    if (config.features.bots) {
+      startBotActivityLoop(io);
+    }
+
     // Start HTTP server
     return new Promise((resolve, reject) => {
       httpServer.listen(config.port, config.host, () => {
@@ -155,6 +163,10 @@ export async function startServer() {
 ║  Env: ${config.env.toUpperCase()}
 ║  WebSocket: Ready
 ║  Database: Connected
+║  Bots: ${config.features.bots ? 'Enabled' : 'Disabled'}
+║  Events: ${config.features.events ? 'Enabled' : 'Disabled'}
+║  PvP: ${config.features.pvp ? 'Enabled' : 'Disabled'}
+║  Guilds: ${config.features.guilds ? 'Enabled' : 'Disabled'}
 ╚═══════════════════════════════════════════════╝
         `);
         resolve({ httpServer, io, app });
@@ -172,6 +184,7 @@ export async function startServer() {
 async function shutdown() {
   console.log('\n⏹ Shutting down...');
   try {
+    stopEventScheduler();
     io.close();
     httpServer.close(() => {
       console.log('✓ HTTP server closed');
