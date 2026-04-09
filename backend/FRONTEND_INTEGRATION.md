@@ -1,650 +1,658 @@
-# NETRUNNER Multiplayer Frontend Integration Guide
+# NETRUNNER Multiplayer Integration Guide
+## Phase 6: Frontend Client SDK Implementation
 
-Complete guide for integrating the NETRUNNER game client with the multiplayer backend server.
+This document provides complete integration instructions for adding multiplayer features to the NETRUNNER single-player idle game using the NetrunnerClient SDK.
 
-## Overview
+---
 
-The multiplayer system uses:
-- **REST API** for state persistence (game progress, profile, guilds, leaderboards)
-- **WebSockets** for real-time updates (duels, guild wars, notifications)
-- **JWT Authentication** for secure endpoints
-- **Unified Progress Model** where a single character works for both single-player and multiplayer
+## Quick Start
 
-## Getting Started
+### 1. Include the Client Library
 
-### 1. Install Client Libraries
+Add the client SDK to your HTML:
 
-Add these to your frontend `package.json`:
-
-```bash
-npm install axios socket.io-client jsonwebtoken
+```html
+<!-- In index.html, before your game script -->
+<script src="/backend/src/utils/clientSDK.js"></script>
 ```
 
-### 2. Environment Configuration
-
-Create `.env` in your frontend root:
-
-```
-VITE_API_BASE_URL=http://localhost:5000
-VITE_WS_URL=ws://localhost:5000
-VITE_GAME_VERSION=1.0.0
-```
-
-### 3. Initialize Client
-
-Create `js/multiplayer/client.js`:
+Or import as ES6 module:
 
 ```javascript
-import io from 'socket.io-client';
-import axios from 'axios';
+import NetrunnerClient from './clientSDK.js';
+```
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+### 2. Initialize the Client
 
-let token = localStorage.getItem('netrunner_token');
-let playerId = localStorage.getItem('netrunner_playerId');
-let socket = null;
+In your main game initialization code (e.g., `js/app.js`):
 
-// Create axios instance with auth headers
-export const api = axios.create({
-  baseURL: API_BASE,
-  headers: {
-    'Content-Type': 'application/json',
+```javascript
+// Initialize multiplayer client
+const netrunner = new NetrunnerClient({
+  apiUrl: 'http://localhost:3000/api', // or production URL
+  gameId: 'netrunner-main',
+  oauth: {
+    githubId: process.env.GITHUB_OAUTH_ID,
+    googleId: process.env.GOOGLE_OAUTH_ID,
+  },
+  callbacks: {
+    authenticated: (data) => console.log('Logged in!', data),
+    'duel:started': (data) => console.log('Duel started!', data),
+    'war:damage_update': (data) => console.log('War damage:', data),
   },
 });
 
-// Add token to requests
-api.interceptors.request.use((config) => {
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Store globally for access in game code
+window.netrunner = netrunner;
+```
+
+### 3. Add Login UI
+
+Modify the game UI to include multiplayer login:
+
+```html
+<!-- Add to index.html in a modal or sidebar -->
+<div id="multiplayer-panel" style="display: none;">
+  <h2>Multiplayer</h2>
+  
+  <!-- Login section -->
+  <div id="login-section">
+    <input id="username-input" type="text" placeholder="Username">
+    <input id="password-input" type="password" placeholder="Password">
+    <button id="login-btn">Login</button>
+    <button id="register-btn">Register</button>
+    
+    <!-- OAuth buttons -->
+    <button id="github-login">Login with GitHub</button>
+    <button id="google-login">Login with Google</button>
+  </div>
+  
+  <!-- Multiplayer section (shown when logged in) -->
+  <div id="multiplayer-section" style="display: none;">
+    <p id="player-info"></p>
+    <button id="logout-btn">Logout</button>
+    
+    <!-- Leaderboards -->
+    <div id="leaderboard-section">
+      <h3>Leaderboards</h3>
+      <button id="view-xp-leaderboard">XP Leaderboard</button>
+      <button id="view-elo-leaderboard">ELO Leaderboard</button>
+    </div>
+    
+    <!-- PvP Duels -->
+    <div id="pvp-section">
+      <h3>PvP Duels</h3>
+      <input id="opponent-search" type="text" placeholder="Search player...">
+      <button id="challenge-player">Challenge</button>
+      <div id="pending-challenges"></div>
+    </div>
+    
+    <!-- Guilds -->
+    <div id="guild-section">
+      <h3>Guilds</h3>
+      <button id="view-guilds">Browse Guilds</button>
+      <button id="create-guild">Create Guild</button>
+      <div id="my-guild"></div>
+    </div>
+  </div>
+</div>
+```
+
+### 4. Wire Up Event Handlers
+
+In your game code (e.g., `js/app.js`):
+
+```javascript
+// Login button
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const username = document.getElementById('username-input').value;
+  const password = document.getElementById('password-input').value;
+  
+  try {
+    const result = await netrunner.login(username, password);
+    updateUIAfterLogin(result.player);
+  } catch (error) {
+    alert('Login failed: ' + error.message);
   }
-  return config;
 });
 
-// Socket instance
-export function getSocket() {
-  return socket;
-}
-
-export function initSocket() {
-  socket = io(WS_URL, {
-    auth: { playerId },
-    reconnection: true,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
-    reconnectionAttempts: 5,
-  });
-
-  socket.on('connect', () => {
-    console.log('✓ Connected to multiplayer server');
-    socket.emit('auth', { playerId });
-  });
-
-  socket.on('authenticated', (data) => {
-    console.log('✓ Authenticated:', data.message);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('✗ Disconnected from multiplayer server');
-  });
-
-  return socket;
-}
-
-export async function setAuthToken(newToken, newPlayerId) {
-  token = newToken;
-  playerId = newPlayerId;
-  localStorage.setItem('netrunner_token', newToken);
-  localStorage.setItem('netrunner_playerId', newPlayerId);
+// Register button
+document.getElementById('register-btn').addEventListener('click', async () => {
+  const username = document.getElementById('username-input').value;
+  const email = prompt('Email:');
+  const password = document.getElementById('password-input').value;
   
-  if (socket) {
-    socket.auth = { playerId };
-    socket.disconnect().connect();
+  try {
+    const result = await netrunner.register({
+      username, email, password,
+      confirmPassword: password
+    });
+    updateUIAfterLogin(result.player);
+  } catch (error) {
+    alert('Registration failed: ' + error.message);
   }
-}
+});
 
-export async function logout() {
-  token = null;
-  playerId = null;
-  localStorage.removeItem('netrunner_token');
-  localStorage.removeItem('netrunner_playerId');
+// OAuth login
+document.getElementById('github-login').addEventListener('click', () => {
+  netrunner.initiateOAuthLogin('github');
+});
+
+document.getElementById('google-login').addEventListener('click', () => {
+  netrunner.initiateOAuthLogin('google');
+});
+
+// Logout
+document.getElementById('logout-btn').addEventListener('click', () => {
+  netrunner.logout();
+  updateUIAfterLogout();
+});
+
+function updateUIAfterLogin(player) {
+  document.getElementById('login-section').style.display = 'none';
+  document.getElementById('multiplayer-section').style.display = 'block';
+  document.getElementById('player-info').textContent = 
+    `Welcome ${player.username}! XP: ${player.totalXP}, ELO: ${player.eloRating}`;
   
-  if (socket) {
-    socket.disconnect();
-    socket = null;
-  }
+  // Connect to WebSocket for real-time updates
+  netrunner.connectWebSocket().catch(console.error);
 }
 
-export default { api, getSocket, initSocket, setAuthToken, logout };
+function updateUIAfterLogout() {
+  document.getElementById('login-section').style.display = 'block';
+  document.getElementById('multiplayer-section').style.display = 'none';
+}
 ```
 
-## Integration Points
+---
 
-### Authentication
+## Integration with Single-Player Game Progress
 
-**Register/Login Flow:**
+### Sync Game Progress to Multiplayer
+
+After skill progression, craft items, or other achievements, sync to the multiplayer server:
 
 ```javascript
-import { api, setAuthToken, initSocket } from './multiplayer/client.js';
-
-async function registerPlayer(username, email, password) {
+// In your game loop or after major actions
+async function syncGameProgress() {
   try {
-    const res = await api.post('/auth/register', {
-      username,
-      email,
-      password,
-      confirmPassword: password,
-    });
-
-    await setAuthToken(res.data.token, res.data.player.id);
-    initSocket();
+    // Collect game data from your single-player game
+    const gameData = {
+      totalXP: game.skillManager.getTotalXP(),
+      skills: game.skillManager.getAllSkillsData(),
+      currency: game.economy.getTotalCurrency(),
+      inventory: game.inventory.getItems(),
+      equipment: game.equipment.getEquipment(),
+      prestige: game.prestige.level,
+    };
     
-    return res.data.player;
+    // Sync to server
+    await netrunner.syncGameProgress(gameData);
+    
+    console.log('Game progress synced to server');
   } catch (error) {
-    console.error('Registration failed:', error.response?.data?.error);
-    throw error;
+    console.error('Failed to sync progress:', error);
+    // Retry in 30 seconds
+    setTimeout(syncGameProgress, 30000);
   }
 }
 
-async function loginPlayer(email, password) {
+// Call this periodically (e.g., every 5 minutes or after significant progress)
+setInterval(syncGameProgress, 5 * 60 * 1000);
+```
+
+### Display Synced Progress
+
+```javascript
+// Get and display server-side progress
+async function displayServerProgress() {
   try {
-    const res = await api.post('/auth/login', { email, password });
+    const progress = await netrunner.getGameProgress();
+    console.log('Server progress:', progress);
     
-    await setAuthToken(res.data.token, res.data.player.id);
-    initSocket();
-    
-    return res.data.player;
+    // Could display stats like:
+    // - Total XP (from all players with same account)
+    // - Rank on leaderboard
+    // - Guilds and achievements
   } catch (error) {
-    console.error('Login failed:', error.response?.data?.error);
-    throw error;
+    console.error('Failed to get server progress:', error);
   }
 }
-
-// OAuth (redirect-based)
-function loginWithGitHub() {
-  window.location.href = 'http://localhost:5000/auth/github';
-}
-
-function loginWithGoogle() {
-  window.location.href = 'http://localhost:5000/auth/google';
-}
-
-// Handle OAuth callback
-function handleAuthCallback() {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
-  const username = params.get('username');
-  const error = params.get('error');
-
-  if (error) {
-    console.error('OAuth failed:', error);
-    return false;
-  }
-
-  if (token) {
-    setAuthToken(token, username);
-    initSocket();
-    return true;
-  }
-
-  return false;
-}
-
-export { registerPlayer, loginPlayer, loginWithGitHub, loginWithGoogle, handleAuthCallback };
 ```
 
-### Game Progress Synchronization
+---
 
-**Sync single-player progress to multiplayer:**
+## PvP Duel System
+
+### Challenge a Player
 
 ```javascript
-import { api } from './multiplayer/client.js';
-
-async function syncGameProgress(playerId, gameData) {
+// Search for player and challenge them
+document.getElementById('challenge-player').addEventListener('click', async () => {
+  const opponentName = document.getElementById('opponent-search').value;
+  
   try {
-    const res = await api.post(`/api/players/${playerId}/sync`, { gameData });
-    console.log('✓ Game progress synced:', res.data.lastSyncAt);
-    return res.data;
-  } catch (error) {
-    console.error('Sync failed:', error.response?.data?.error);
-  }
-}
-
-// Call this when saving game
-function onGameSave() {
-  const gameData = {
-    level: game.skillManager.getHighestLevel(),
-    totalXP: game.skillManager.getTotalXP(),
-    skills: game.skillManager.serialize(),
-    inventory: game.inventory.serialize(),
-    equipment: game.equipment.serialize(),
-    currency: game.economy.currency,
-    prestige: game.prestige.serialize(),
-    achievements: game.player.achievements.getUnlockedIds(),
-    playTime: game.player.playTime,
-  };
-
-  syncGameProgress(playerId, gameData);
-}
-
-export { syncGameProgress };
-```
-
-### Guild Management
-
-**UI for guild management:**
-
-```javascript
-import { api } from './multiplayer/client.js';
-
-export const guildAPI = {
-  async create(name, description) {
-    return api.post('/api/guilds', { name, description });
-  },
-
-  async getInfo(guildId) {
-    return api.get(`/api/guilds/${guildId}`);
-  },
-
-  async updateSettings(guildId, settings) {
-    return api.put(`/api/guilds/${guildId}`, settings);
-  },
-
-  async getMembers(guildId) {
-    return api.get(`/api/guilds/${guildId}/members`);
-  },
-
-  async invite(guildId, targetPlayerId) {
-    return api.post(`/api/guilds/${guildId}/invite`, { targetPlayerId });
-  },
-
-  async removeMember(guildId, memberId) {
-    return api.delete(`/api/guilds/${guildId}/members/${memberId}`);
-  },
-
-  async contribute(guildId, amount) {
-    return api.post(`/api/guilds/${guildId}/treasury/contribute`, { amount });
-  },
-
-  async leave(playerId) {
-    return api.post(`/api/players/${playerId}/guild/leave`);
-  },
-};
-
-export default guildAPI;
-```
-
-### PvP Duels
-
-**REST API duel flow:**
-
-```javascript
-import { api, getSocket } from './multiplayer/client.js';
-
-export const pvpAPI = {
-  async challenge(opponentId, stakes) {
-    return api.post('/api/pvp/challenge', { opponentId, stakes });
-  },
-
-  async acceptChallenge(matchId) {
-    return api.post(`/api/pvp/challenge/${matchId}/accept`);
-  },
-
-  async declineChallenge(matchId) {
-    return api.post(`/api/pvp/challenge/${matchId}/decline`);
-  },
-
-  async getPending() {
-    return api.get('/api/pvp/pending');
-  },
-
-  async getHistory(playerId, limit = 20) {
-    return api.get(`/api/pvp/history/${playerId}?limit=${limit}`);
-  },
-
-  async getStats(playerId) {
-    return api.get(`/api/pvp/stats/${playerId}`);
-  },
-};
-
-// WebSocket duel events
-export function setupDuelListeners() {
-  const socket = getSocket();
-  if (!socket) return;
-
-  // Match started
-  socket.on('duel:started', (data) => {
-    console.log('⚔️ Duel started:', data);
-    showDuelUI(data);
-  });
-
-  // Round update
-  socket.on('duel:round', (data) => {
-    console.log('Round', data.round, '- HP:', data.challengerHp, 'vs', data.opponentHp);
-    updateDuelUI(data);
-  });
-
-  // Duel completed
-  socket.on('duel:completed', (data) => {
-    console.log(`${data.winner} defeats ${data.loser}`);
-    showDuelResult(data);
-  });
-}
-
-export default pvpAPI;
-```
-
-**WebSocket duel interaction:**
-
-```javascript
-import { getSocket } from './multiplayer/client.js';
-
-export function initiateDuel(matchId) {
-  const socket = getSocket();
-  socket.emit('duel:start', { matchId });
-}
-
-export function sendAttack(matchId, damage) {
-  const socket = getSocket();
-  socket.emit('duel:attack', { matchId, damage });
-}
-
-export function surrenderDuel(matchId) {
-  const socket = getSocket();
-  socket.emit('duel:surrender', { matchId });
-}
-
-export default { initiateDuel, sendAttack, surrenderDuel };
-```
-
-### Guild Wars
-
-**Event participation:**
-
-```javascript
-import { api, getSocket } from './multiplayer/client.js';
-
-export const eventAPI = {
-  async getEvents(type) {
-    return api.get('/api/events', { params: { type } });
-  },
-
-  async getEventDetails(eventId) {
-    return api.get(`/api/events/${eventId}`);
-  },
-
-  async joinEvent(eventId) {
-    return api.post(`/api/events/${eventId}/join`);
-  },
-
-  async leaveEvent(eventId) {
-    return api.post(`/api/events/${eventId}/leave`);
-  },
-
-  async recordDamage(eventId, damage) {
-    return api.post('/api/events/guild-war/damage', { eventId, damage });
-  },
-
-  async getCurrentWarLeaderboard() {
-    return api.get('/api/events/leaderboards/current');
-  },
-};
-
-// WebSocket war events
-export function setupWarListeners() {
-  const socket = getSocket();
-  if (!socket) return;
-
-  socket.on('war:joined', (data) => {
-    console.log('🏴 Joined guild war:', data);
-  });
-
-  socket.on('war:damage_update', (data) => {
-    console.log('War damage update:', data);
-    updateWarLeaderboard(data);
-  });
-
-  socket.on('war:victory', (data) => {
-    console.log('🎉 Guild war complete:', data);
-    showWarResults(data);
-  });
-
-  socket.on('war:status_update', (data) => {
-    updateBossHP(data.bossHp);
-  });
-}
-
-export function joinGuildWar(eventId, guildId) {
-  const socket = getSocket();
-  socket.emit('war:join', { eventId, guildId });
-}
-
-export function reportWarDamage(eventId, guildId, damage) {
-  const socket = getSocket();
-  socket.emit('war:damage', { eventId, guildId, damage });
-}
-
-export default eventAPI;
-```
-
-### Leaderboards
-
-**Fetch and display leaderboards:**
-
-```javascript
-import { api } from './multiplayer/client.js';
-
-export const leaderboardAPI = {
-  async getPlayerLeaderboard(limit = 100, offset = 0) {
-    return api.get('/api/leaderboards/players', {
-      params: { limit, offset },
-    });
-  },
-
-  async getPlayerByPeriod(period = 'weekly', limit = 50) {
-    return api.get(`/api/leaderboards/players/${period}`, {
-      params: { limit },
-    });
-  },
-
-  async getGuildLeaderboard(limit = 50, sortBy = 'consecutiveWins') {
-    return api.get('/api/leaderboards/guilds', {
-      params: { limit, sortBy },
-    });
-  },
-
-  async getPlayerRank(playerId) {
-    return api.get(`/api/leaderboards/player/${playerId}/rank`);
-  },
-
-  async getGlobalStats() {
-    return api.get('/api/leaderboards/stats');
-  },
-};
-
-export default leaderboardAPI;
-```
-
-### Equipment Effects
-
-**Equipment bonuses apply to single-player gameplay:**
-
-```javascript
-import { game } from './main.js'; // Your game instance
-
-export function applyEquipmentBonuses() {
-  const effects = game.equipment.getSpecialEffects();
-
-  // XP boost
-  if (effects.xpBoost > 0) {
-    game.skillManager.xpMultiplier = 1 + effects.xpBoost;
-  }
-
-  // Speed boost (reduce action duration)
-  if (effects.speedBoost > 0) {
-    game.actionDurationMultiplier = 1 - effects.speedBoost;
-  }
-
-  // Loot boost
-  if (effects.lootBoost > 0) {
-    game.lootDropMultiplier = 1 + effects.lootBoost;
-  }
-
-  // Currency boost
-  if (effects.currencyBoost > 0) {
-    game.economy.currencyMultiplier = 1 + effects.currencyBoost;
-  }
-
-  // Lifestealing (during combat)
-  if (effects.lifeSteal > 0) {
-    game.combat.lifeStealMultiplier = effects.lifeSteal;
-  }
-}
-```
-
-## Real-Time Notifications
-
-**Setup notification system:**
-
-```javascript
-import { getSocket } from './multiplayer/client.js';
-
-export function setupNotifications() {
-  const socket = getSocket();
-  if (!socket) return;
-
-  // PvP notifications
-  socket.on('duel:completed', (data) => {
-    showNotification(`⚔️ ${data.winner} defeated ${data.loser}`, 'info');
-  });
-
-  // Guild notifications
-  socket.on('player:joined-guild', (data) => {
-    showNotification(`${data.playerName} joined the guild`, 'guild');
-  });
-
-  // Event notifications
-  socket.on('event:started', (data) => {
-    showNotification(`🎉 ${data.eventName} started!`, 'event');
-  });
-
-  socket.on('event:ended', (data) => {
-    showNotification(`Event complete: ${data.eventName}`, 'event');
-  });
-
-  // Global notifications
-  socket.on('presence:changed', (data) => {
-    updatePlayerStatus(data);
-  });
-}
-
-function showNotification(message, type = 'info') {
-  // Your notification UI implementation
-  console.log(`[${type.toUpperCase()}]`, message);
-}
-
-function updatePlayerStatus(data) {
-  // Update UI with player presence
-  console.log(`${data.playerId} is ${data.status}`);
-}
-
-export { showNotification };
-```
-
-## Error Handling
-
-**Comprehensive error handling:**
-
-```javascript
-import { api } from './multiplayer/client.js';
-
-// Global error interceptor
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const errorMessage = error.response?.data?.error || error.message;
-
-    switch (error.response?.status) {
-      case 401:
-        console.error('❌ Unauthorized - please login');
-        // Redirect to login
-        break;
-
-      case 403:
-        console.error('❌ Forbidden - insufficient permissions');
-        break;
-
-      case 404:
-        console.error('❌ Not found');
-        break;
-
-      case 409:
-        console.error('❌ Conflict -', errorMessage);
-        break;
-
-      case 500:
-        console.error('❌ Server error - try again later');
-        break;
-
-      default:
-        console.error('❌ Error:', errorMessage);
+    // First, find player by username
+    const players = await netrunner.getLeaderboard({ limit: 1000 });
+    const opponent = players.find(p => p.username.toLowerCase() === opponentName.toLowerCase());
+    
+    if (!opponent) {
+      alert('Player not found');
+      return;
     }
-
-    return Promise.reject(error);
+    
+    // Challenge with stakes
+    const stakes = prompt('Enter stakes (1000-10000 E$):', '1000');
+    const match = await netrunner.challengePlayer(opponent.id, {
+      stakes: parseInt(stakes),
+    });
+    
+    alert(`Challenge sent! Match ID: ${match.id}`);
+  } catch (error) {
+    alert('Challenge failed: ' + error.message);
   }
-);
-
-export default api;
+});
 ```
 
-## Best Practices
-
-1. **Always persist token to localStorage** for session recovery
-2. **Emit game sync event** on regular intervals (every 30 seconds)
-3. **Handle reconnection gracefully** - Socket.io auto-reconnects
-4. **Cache leaderboards locally** - refresh every 5 minutes
-5. **Throttle game progress sync** - don't spam updates
-6. **Handle rate limiting** - backend enforces 100 req/15min
-7. **Validate all user input** - server validates but validate client-side too
-8. **Show connection status** - inform player if disconnected from multiplayer
-
-## Testing Integration
-
-**Mock API for development:**
+### Accept/Decline Challenges
 
 ```javascript
-export const mockAPI = {
-  async getPlayerProfile(playerId) {
-    return Promise.resolve({
-      data: {
-        player: {
-          id: playerId,
-          username: 'test_player',
-          level: 50,
-          rank: 1200,
-        },
-      },
-    });
-  },
+// Display and handle pending challenges
+async function displayPendingChallenges() {
+  try {
+    const challenges = await netrunner.getPendingChallenges();
+    const container = document.getElementById('pending-challenges');
+    
+    container.innerHTML = challenges.map(match => `
+      <div class="challenge">
+        <p>${match.challenger.username} challenges you!</p>
+        <p>Stakes: ${match.stakes} E$</p>
+        <button onclick="acceptChallenge('${match.id}')">Accept</button>
+        <button onclick="declineChallenge('${match.id}')">Decline</button>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('Failed to load challenges:', error);
+  }
+}
 
-  async syncGameProgress(playerId, gameData) {
-    return Promise.resolve({ data: { message: 'synced' } });
-  },
+async function acceptChallenge(matchId) {
+  try {
+    const match = await netrunner.acceptChallenge(matchId);
+    
+    // Connect to WebSocket if not already connected
+    if (!netrunner.state.isConnected) {
+      await netrunner.connectWebSocket();
+    }
+    
+    alert('Challenge accepted! Duel starting...');
+    // UI should now show the real-time duel
+  } catch (error) {
+    alert('Failed to accept: ' + error.message);
+  }
+}
 
-  // ... add more mocks as needed
-};
+async function declineChallenge(matchId) {
+  try {
+    await netrunner.declineChallenge(matchId);
+    alert('Challenge declined');
+    displayPendingChallenges(); // Refresh list
+  } catch (error) {
+    alert('Failed to decline: ' + error.message);
+  }
+}
 ```
 
-## Performance Tips
+### Real-Time Duel Display
 
-1. **Lazy-load leaderboards** - only fetch when viewing leaderboard tab
-2. **Debounce damage reports** - batch war damage updates
-3. **Unsubscribe from WebSocket events** on component unmount
-4. **Cache player profiles** - don't re-fetch same player repeatedly
-5. **Implement request timeouts** - don't wait forever for slow connections
+```javascript
+// Listen for duel events via WebSocket
+netrunner.on('duel:started', (data) => {
+  console.log('Duel started!', data);
+  // Show duel UI with both players' HP bars
+  displayDuelUI(data);
+});
 
-## Resources
+netrunner.on('duel:round', (data) => {
+  console.log('Round update:', data);
+  // Update HP bars, show attack animations
+  updateDuelDisplay(data);
+});
 
-- [Complete API Reference](./API.md)
-- [Game Design Doc](../MULTIPLAYER_PLAN.md)
-- [Backend README](./README.md)
+netrunner.on('duel:completed', (data) => {
+  console.log('Duel finished!', data);
+  // Show results: winner, XP/currency changes
+  displayDuelResults(data);
+});
+
+// Example duel UI
+function displayDuelUI(match) {
+  const html = `
+    <div id="duel-screen">
+      <div class="player-1">
+        <h3>${match.player1.username}</h3>
+        <div class="hp-bar" id="p1-hp" style="width: 100%"></div>
+        <p id="p1-hp-text">${match.player1Hp} / ${match.player1MaxHp}</p>
+      </div>
+      
+      <div class="vs">VS</div>
+      
+      <div class="player-2">
+        <h3>${match.player2.username}</h3>
+        <div class="hp-bar" id="p2-hp" style="width: 100%"></div>
+        <p id="p2-hp-text">${match.player2Hp} / ${match.player2MaxHp}</p>
+      </div>
+      
+      <button id="attack-btn" onclick="netrunner.emitDuelAction('${match.id}', 'attack')">
+        Attack
+      </button>
+      <button id="surrender-btn" onclick="netrunner.emitDuelAction('${match.id}', 'surrender')">
+        Surrender
+      </button>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function updateDuelDisplay(round) {
+  const p1HpPercent = (round.player1Hp / round.player1MaxHp) * 100;
+  const p2HpPercent = (round.player2Hp / round.player2MaxHp) * 100;
+  
+  document.getElementById('p1-hp').style.width = p1HpPercent + '%';
+  document.getElementById('p2-hp').style.width = p2HpPercent + '%';
+  document.getElementById('p1-hp-text').textContent = 
+    `${round.player1Hp} / ${round.player1MaxHp}`;
+  document.getElementById('p2-hp-text').textContent = 
+    `${round.player2Hp} / ${round.player2MaxHp}`;
+  
+  console.log(`Round ${round.roundNumber}: P1 dealt ${round.damageDealt}, P2 health: ${round.enemyHp}`);
+}
+
+function displayDuelResults(data) {
+  alert(`
+    Duel Complete!
+    Winner: ${data.winner.username}
+    Your ELO: ${data.eloChange > 0 ? '+' : ''}${data.eloChange}
+    Currency: ${data.currencyWon > 0 ? '+' : ''}${data.currencyWon}
+  `);
+}
+```
+
+---
+
+## Guild System Integration
+
+### Browse and Join Guilds
+
+```javascript
+// Display guild list
+async function displayGuildBrowser() {
+  try {
+    const guilds = await netrunner.getGuilds({ limit: 50 });
+    const container = document.getElementById('guild-browser');
+    
+    container.innerHTML = guilds.map(guild => `
+      <div class="guild-card">
+        <h3>${guild.name} [${guild.tag}]</h3>
+        <p>${guild.description}</p>
+        <p>Members: ${guild.members.length} / ${guild.maxMembers}</p>
+        <p>Level: ${guild.level}</p>
+        <button onclick="joinGuild('${guild.id}')">Join</button>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('Failed to load guilds:', error);
+  }
+}
+
+async function joinGuild(guildId) {
+  try {
+    const player = await netrunner.joinGuild(guildId);
+    alert(`Joined guild! You are now a member.`);
+    displayMyGuild(guildId);
+  } catch (error) {
+    alert('Failed to join: ' + error.message);
+  }
+}
+```
+
+### Display Guild Information
+
+```javascript
+async function displayMyGuild(guildId) {
+  try {
+    const guild = await netrunner.getGuild(guildId);
+    const members = await netrunner.getGuildMembers(guildId);
+    
+    const html = `
+      <div class="my-guild">
+        <h3>${guild.name} [${guild.tag}]</h3>
+        <p>${guild.description}</p>
+        <p>Treasury: ${guild.treasury} E$</p>
+        <p>Level: ${guild.level}</p>
+        
+        <h4>Members (${members.length})</h4>
+        <ul>
+          ${members.map(m => `
+            <li>
+              ${m.username} (${m.role})
+              <br>XP: ${m.totalXP}, ELO: ${m.eloRating}
+            </li>
+          `).join('')}
+        </ul>
+        
+        <button onclick="leaveGuild('${guildId}')">Leave Guild</button>
+      </div>
+    `;
+    
+    document.getElementById('my-guild').innerHTML = html;
+  } catch (error) {
+    console.error('Failed to load guild:', error);
+  }
+}
+
+async function leaveGuild(guildId) {
+  if (confirm('Are you sure you want to leave this guild?')) {
+    try {
+      await netrunner.leaveGuild(guildId);
+      alert('You left the guild');
+      document.getElementById('my-guild').innerHTML = '';
+    } catch (error) {
+      alert('Failed to leave: ' + error.message);
+    }
+  }
+}
+```
+
+---
+
+## Guild Wars Integration
+
+### Display Current War and Contribute Damage
+
+```javascript
+// Show current guild war info
+async function displayCurrentWar() {
+  try {
+    const event = await netrunner.getCurrentEvent();
+    if (!event) {
+      console.log('No active guild war');
+      return;
+    }
+    
+    const leaderboard = await netrunner.getEventLeaderboard(event.id);
+    
+    const html = `
+      <div class="guild-war">
+        <h3>Guild War: ${event.name}</h3>
+        <p>Boss HP: ${event.bossHp} / ${event.bossMaxHp}</p>
+        <div class="hp-bar" style="width: ${(event.bossHp / event.bossMaxHp) * 100}%"></div>
+        
+        <h4>Top Guilds</h4>
+        <ol>
+          ${leaderboard.slice(0, 5).map(entry => `
+            <li>
+              ${entry.guildName}: ${entry.damage} damage
+            </li>
+          `).join('')}
+        </ol>
+        
+        <button onclick="contributeToWar()">Contribute Damage</button>
+      </div>
+    `;
+    
+    document.getElementById('guild-war').innerHTML = html;
+  } catch (error) {
+    console.error('Failed to load war:', error);
+  }
+}
+
+async function contributeToWar() {
+  const player = netrunner.state.player;
+  if (!player || !player.guildId) {
+    alert('You must be in a guild to contribute');
+    return;
+  }
+  
+  try {
+    // Get player's current combat skill level for damage calculation
+    const damage = 50 + (Math.random() * 50); // Example: 50-100 damage
+    
+    const result = await netrunner.contributeToWarDamage(player.guildId, damage);
+    alert(`Dealt ${damage} damage! Total guild damage: ${result.totalDamage}`);
+    
+    // Refresh war display
+    displayCurrentWar();
+  } catch (error) {
+    alert('Failed to contribute: ' + error.message);
+  }
+}
+
+// Listen for real-time war updates
+netrunner.on('war:damage_update', (data) => {
+  console.log('War damage update:', data);
+  // Update boss HP bar in real-time
+  const percent = (data.bossHp / data.bossMaxHp) * 100;
+  document.querySelector('.hp-bar').style.width = percent + '%';
+});
+
+netrunner.on('war:victory', (data) => {
+  alert(`Guild ${data.winningGuild} defeated the boss! Rewards distributed.`);
+  displayCurrentWar();
+});
+```
+
+---
+
+## Error Handling & Recovery
+
+### Connection Management
+
+```javascript
+// Auto-reconnect on disconnect
+netrunner.on('socket:disconnected', () => {
+  console.log('WebSocket disconnected, attempting to reconnect...');
+  setTimeout(() => {
+    if (!netrunner.state.isConnected) {
+      netrunner.connectWebSocket().catch(console.error);
+    }
+  }, 3000);
+});
+
+// Handle socket errors
+netrunner.on('socket:error', (error) => {
+  console.error('WebSocket error:', error);
+  // Show error notification to user
+  showNotification('Connection error: ' + error.message, 'error');
+});
+
+// Retry failed API calls
+async function makeRequestWithRetry(fn, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+}
+
+// Usage:
+const profile = await makeRequestWithRetry(() => netrunner.getProfile());
+```
+
+---
+
+## Production Deployment
+
+### Environment Variables
+
+Create `.env` file in your game root:
+
+```env
+VITE_API_URL=https://api.netrunner.game
+VITE_GITHUB_OAUTH_ID=your_github_app_id
+VITE_GOOGLE_OAUTH_ID=your_google_app_id
+```
+
+### Initialize with Production Config
+
+```javascript
+const netrunner = new NetrunnerClient({
+  apiUrl: import.meta.env.VITE_API_URL,
+  gameId: 'netrunner-main',
+  oauth: {
+    githubId: import.meta.env.VITE_GITHUB_OAUTH_ID,
+    googleId: import.meta.env.VITE_GOOGLE_OAUTH_ID,
+  },
+});
+```
+
+---
+
+## Security Best Practices
+
+1. **Never store passwords**: Always use OAuth or secure backends
+2. **Validate all user input**: Check stakes, guild names, etc.
+3. **Use HTTPS in production**: All API calls must be encrypted
+4. **Expire tokens**: Implement token refresh every 24 hours
+5. **Rate limit**: Implement client-side rate limiting for API calls
+6. **CORS**: Only allow requests from your domain
+
+---
+
+## Troubleshooting
+
+### WebSocket connection fails
+```javascript
+// Check if server is running
+fetch('http://localhost:3000/api/players/leaderboard')
+  .then(r => r.json())
+  .then(console.log)
+  .catch(console.error);
+```
+
+### OAuth redirect loop
+- Ensure redirect URI matches exactly in OAuth app settings
+- Check that `window.location.href` is setting correctly
+- Verify client IDs are not hardcoded, use environment variables
+
+### Synced progress not updating
+- Ensure `syncGameProgress()` is called after game actions
+- Check that player is authenticated before syncing
+- Verify game data structure matches API expectations
+
+---
+
+## Next Steps
+
+1. Integrate this SDK into your game
+2. Test login/registration with test accounts
+3. Create test duels between players
+4. Set up test guild and guild war
+5. Deploy to production server
+6. Monitor for issues and optimize performance
+
+For questions or issues, see the API documentation at `/backend/API.md`
