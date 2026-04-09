@@ -46,8 +46,8 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', requireAuth, async (req, res) => {
   try {
     // Only allow players to update their own profile
-    if (req.player.id !== req.params.id && !req.player.isAdmin) {
-      return res.status(403).json({ error: 'Cannot update other players' profiles' });
+     if (req.player.id !== req.params.id && !req.player.isAdmin) {
+      return res.status(403).json({ error: "Cannot update other players' profiles" });
     }
 
     const { displayName, bio, avatar } = req.body;
