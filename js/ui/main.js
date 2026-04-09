@@ -1,0 +1,1085 @@
+import { events, EVENTS } from '../engine/events.js';
+import { getGame } from '../main.js';
+import { SHOP_ITEMS, ITEMS, SKILLS, SKILL_ABILITIES, PASSIVE_BONUSES, ACTIVITIES, BACKGROUND_HACK_SKILLS, BACKGROUND_HACK_EFFICIENCY } from '../data/skillData.js';
+import { CRAFT_RECIPES } from '../systems/crafting.js';
+import { PRESTIGE_UPGRADES } from '../systems/prestige.js';
+import { HackerTerminal } from './hackerTerminal.js';
+
+export class UI {
+  constructor() {
+    this.currentView = 'skills';
+    this.currentCategory = 'hacking';
+    this.currentSkill = null;
+    this.pickerOverlay = null;
+    this._eventUnsubs = [];
+    this.hackerTerminal = new HackerTerminal();
+  }
+
+  setupEventListeners() {
+    // Clean up any previous listeners (prevents accumulation on reset)
+    this._eventUnsubs.forEach(unsub => { if (typeof unsub === 'function') unsub(); });
+    this._eventUnsubs = [];
+    this._eventUnsubs.push(events.on(EVENTS.SKILL_LEVEL_UP, (data) => this.onSkillLevelUp(data)));
+    this._eventUnsubs.push(events.on(EVENTS.SKILL_STARTED, () => this.updateSkillListings()));
+    this._eventUnsubs.push(events.on(EVENTS.SKILL_STOPPED, () => this.updateSkillListings()));
+    this._eventUnsubs.push(events.on(EVENTS.COMBAT_STARTED, () => this.updateCombatView()));
+    this._eventUnsubs.push(events.on(EVENTS.COMBAT_HIT, () => this.updateCombatView()));
+    this._eventUnsubs.push(events.on(EVENTS.COMBAT_ENEMY_DEFEATED, (data) => this.onEnemyDefeated(data)));
+    this._eventUnsubs.push(events.on(EVENTS.COMBAT_ENDED, () => this.updateCombatView()));
+    this._eventUnsubs.push(events.on(EVENTS.COMBAT_PLAYER_DIED, (data) => {
+      this.notify(`Defeated by ${data.enemy || 'enemy'}! Respawning...`, 'error');
+      this.updateCombatView();
+      this.updateSkillListings();
+    }));
+    this._eventUnsubs.push(events.on(EVENTS.CURRENCY_CHANGED, (data) => this.onCurrencyChanged(data)));
+    this._eventUnsubs.push(events.on(EVENTS.ITEM_GAINED, (data) => {
+      this.notify(`+${data.quantity}x ${data.item}`, 'info');
+    }));
+    this._eventUnsubs.push(events.on(EVENTS.ACHIEVEMENT_UNLOCKED, (data) => {
+      this.notify(`ACHIEVEMENT: ${data.name} - ${data.description}`, 'victory');
+    }));
+    this._eventUnsubs.push(events.on(EVENTS.UI_NOTIFICATION, (data) => {
+      this.notify(data.message, data.type || 'info');
+    }));
+    this._eventUnsubs.push(events.on(EVENTS.ABILITY_ACTIVATED, (data) => {
+      const typeLabel = { damage: 'error', heal: 'info', buff: 'levelup', debuff: 'victory' };
+      this.notify(`${data.icon} ${data.abilityName}: ${data.value} ${data.type}`, typeLabel[data.type] || 'info');
+    }));
+
+    // Init the hacker terminal
+    this.hackerTerminal.init();
+  }
+
+  onSkillLevelUp(data) {
+    this.notify(`Level up! ${data.skillName || data.skill} is now level ${data.newLevel}`, 'levelup');
+    this.updateSkillListings();
+  }
+
+  onEnemyDefeated(data) {
+    this.notify(`Defeated ${data.enemy}! +${data.xp} XP`, 'victory');
+    const loot = data.loot;
+    if (loot) {
+      let parts = [];
+      if (loot.currency > 0) parts.push(`${loot.currency} E$`);
+      if (loot.items) {
+        Object.entries(loot.items).forEach(([item, qty]) => {
+          parts.push(`${qty}x ${item}`);
+        });
+      }
+      if (parts.length > 0) this.notify(`Loot: ${parts.join(', ')}`, 'info');
+    }
+  }
+
+  onCurrencyChanged(data) {
+    const currEl = document.getElementById('currency-display');
+    if (currEl) {
+      currEl.textContent = `E$ ${data.currency.toLocaleString()}`;
+    }
+  }
+
+  notify(message, type = 'info') {
+    const notifEl = document.getElementById('notifications');
+    if (!notifEl) return;
+    const div = document.createElement('div');
+    div.className = `notification notification-${type}`;
+    div.textContent = message;
+    notifEl.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
+  }
+
+  // ==========================================
+  // Progress Bars (active skill actions)
+  // ==========================================
+  updateProgressBars() {
+    const game = getGame();
+    if (!game) return;
+    const container = document.getElementById('progress-bars');
+    if (!container) return;
+
+    const activeSkills = game.skillManager.getAllSkills().filter(s => s.isActive && s.activeAction && !s.activeAction.enemy);
+    container.innerHTML = '';
+
+    activeSkills.forEach(skill => {
+      if (!skill.activeAction) return;
+      const isBg = skill._isBackgroundHack;
+      const percent = Math.min(100, (skill.actionProgress / skill.activeAction.duration) * 100);
+      const div = document.createElement('div');
+      div.className = `progress-item ${isBg ? 'progress-background-hack' : ''}`;
+      div.innerHTML = `
+        <div class="progress-label">${isBg ? '<span class="bg-hack-label">BG HACK</span> ' : ''}${skill.name} — ${skill.activeAction.name}${isBg ? ' (75%)' : ''}</div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${percent}%; background: ${isBg ? '#00ff41' : skill.color}"></div>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // ==========================================
+  // Background Hacking Display
+  // ==========================================
+  updateBackgroundHackDisplay() {
+    const game = getGame();
+    if (!game) return;
+    let container = document.getElementById('background-hack-status');
+    if (!container) return;
+
+    const canHack = game.skillManager.canBackgroundHack();
+    const bgInfo = game.skillManager.getBackgroundHackInfo();
+
+    if (!canHack) {
+      container.innerHTML = '';
+      container.style.display = 'none';
+      return;
+    }
+
+    container.style.display = 'block';
+
+    if (bgInfo) {
+      const percent = Math.min(100, (bgInfo.progress / bgInfo.duration) * 100);
+      container.innerHTML = `
+        <div class="bg-hack-panel active">
+          <div class="bg-hack-header">
+            <span class="bg-hack-icon">🔓</span>
+            <span class="bg-hack-title">Background Hack</span>
+            <span class="bg-hack-efficiency">${Math.round(bgInfo.efficiency * 100)}% efficiency</span>
+            <button class="btn-small btn-danger" data-action="stop-background-hack">Stop</button>
+          </div>
+          <div class="bg-hack-info">
+            <span>${bgInfo.skill.icon} ${bgInfo.skill.name} — ${bgInfo.action.name}</span>
+            <span>Lv.${bgInfo.skill.level} | +${Math.floor(bgInfo.action.xp * bgInfo.efficiency)} XP</span>
+          </div>
+          <div class="progress-bar bg-hack-bar">
+            <div class="progress-fill" style="width: ${percent}%; background: #00ff41"></div>
+          </div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="bg-hack-panel idle">
+          <div class="bg-hack-header">
+            <span class="bg-hack-icon">🔓</span>
+            <span class="bg-hack-title">Background Hack</span>
+            <span class="bg-hack-status-text">IDLE</span>
+            <button class="btn-small" data-action="show-background-hack-picker">Start Hack</button>
+          </div>
+          <div class="bg-hack-info">
+            <span class="bg-hack-hint">Cyberware detected — run a hacking skill in background while doing other activities</span>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  updateHackerTerminal() {
+    this.hackerTerminal.update();
+  }
+
+  // Background Hack Picker
+  showBackgroundHackPicker() {
+    this.closePicker();
+    const game = getGame();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'picker-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) this.closePicker(); };
+
+    let html = `<div class="picker-modal">
+      <div class="picker-header">
+        <h3>🔓 Background Hack — Select Activity</h3>
+        <button class="btn-small btn-danger" data-action="close-picker">X</button>
+      </div>
+      <div class="picker-description">
+        <p>Run a hacking activity in the background while you do other tasks. Background hacks operate at <strong>75% efficiency</strong> (reduced XP, currency, and drops).</p>
+      </div>
+      <div class="picker-list">`;
+
+    // Show all hacking skills and their non-combat activities
+    for (const skillId of BACKGROUND_HACK_SKILLS) {
+      const skill = game.skillManager.getSkill(skillId);
+      if (!skill) continue;
+      const activities = ACTIVITIES[skillId];
+      if (!activities) continue;
+
+      // Don't allow background hack on a skill that's already primary
+      const isPrimaryActive = skill.isActive && !skill._isBackgroundHack;
+
+      html += `<div class="bg-hack-skill-group">
+        <div class="bg-hack-skill-header">${skill.icon} ${skill.name} <span class="bg-hack-skill-level">Lv.${skill.level}</span>${isPrimaryActive ? ' <span class="badge-active">PRIMARY ACTIVE</span>' : ''}</div>`;
+
+      activities.forEach(act => {
+        if (act.enemy) return; // no combat activities in background
+        const locked = skill.level < act.level;
+        const disabled = locked || isPrimaryActive;
+        const effXp = Math.floor(act.xp * BACKGROUND_HACK_EFFICIENCY);
+
+        let rewardStr = '';
+        if (act.rewards) {
+          const parts = [];
+          if (act.rewards.currency) parts.push(`${Math.floor(act.rewards.currency.min * BACKGROUND_HACK_EFFICIENCY)}-${Math.floor(act.rewards.currency.max * BACKGROUND_HACK_EFFICIENCY)} E$`);
+          if (act.rewards.items) {
+            Object.entries(act.rewards.items).forEach(([item, range]) => {
+              if (range.max > 0) parts.push(`${range.min}-${range.max} ${item.replace(/_/g, ' ')}`);
+            });
+          }
+          if (parts.length > 0) rewardStr = `<div class="act-rewards">Rewards: ${parts.join(', ')}</div>`;
+        }
+
+        html += `
+          <div class="act-item ${disabled ? 'locked' : ''}">
+            <div class="act-info">
+              <div class="act-name">${act.name}</div>
+              <div class="act-details">
+                ${locked ? `<span class="act-locked">Requires level ${act.level}</span>` : ''}
+                ${!locked ? `<span>Duration: ${act.duration}s</span>` : ''}
+                <span>+${effXp} XP (75%)</span>
+              </div>
+              ${rewardStr}
+            </div>
+            <div class="act-action">
+              ${disabled
+                ? (locked ? '<span class="act-lock-icon">🔒</span>' : '<span class="act-lock-icon">IN USE</span>')
+                : `<button class="btn-small" data-action="start-background-hack" data-skill-id="${skill.id}" data-action-id="${act.id}">Hack</button>`
+              }
+            </div>
+          </div>`;
+      });
+
+      html += `</div>`;
+    }
+
+    html += `</div></div>`;
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+    this.pickerOverlay = overlay;
+
+    const closeBtn = overlay.querySelector('[data-action="close-picker"]');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.closePicker());
+    }
+  }
+
+  // ==========================================
+  // Skill Cards View
+  // ==========================================
+  updateSkillListings() {
+    const game = getGame();
+    if (!game) return;
+    const container = document.getElementById('skills-container');
+    if (!container) return;
+
+    const skills = game.skillManager.getSkillsByCategory(this.currentCategory);
+    container.innerHTML = '';
+
+    skills.forEach(skill => {
+      const div = document.createElement('div');
+      div.className = `skill-card ${skill.isActive ? 'active' : ''}`;
+      div.style.borderColor = skill.color;
+
+      // Real XP progress
+      const progress = skill.getXPProgress();
+      const xpStr = skill.level >= 99
+        ? 'MAX LEVEL'
+        : `XP: ${Math.floor(progress.current).toLocaleString()} / ${Math.floor(progress.needed).toLocaleString()}`;
+      const xpPercent = skill.level >= 99 ? 100 : Math.min(100, progress.percent);
+
+      // Current activity display
+      let activityStr = '';
+      if (skill.isActive && skill.activeAction) {
+        if (skill._isBackgroundHack) {
+          activityStr = `<div class="skill-activity bg-hack-activity">BG Hack: ${skill.activeAction.name} (75%)</div>`;
+        } else {
+          activityStr = `<div class="skill-activity">Active: ${skill.activeAction.name}</div>`;
+        }
+      }
+
+      div.innerHTML = `
+        <div class="skill-header">
+          <span class="skill-icon">${skill.icon}</span>
+          <div class="skill-info">
+            <h3>${skill.name}</h3>
+            <p>Level ${skill.level}</p>
+          </div>
+          <div class="skill-status">
+            ${skill._isBackgroundHack ? '<span class="badge-bg-hack">BG HACK</span>' : skill.isActive ? '<span class="badge-active">ACTIVE</span>' : ''}
+            ${skill.level >= 99 ? '<span class="badge-maxed">MAXED</span>' : ''}
+          </div>
+        </div>
+        <div class="skill-xp">${xpStr}</div>
+        <div class="xp-bar">
+          <div class="xp-fill" style="width: ${xpPercent}%; background: ${skill.color}"></div>
+        </div>
+        <div class="skill-mastery">
+          <small>Mastery Levels: ${Object.entries(skill.masteryData).map(([id, data]) => `${data.level}`).join(', ') || 'None yet'}</small>
+        </div>
+        ${activityStr}
+        <div class="skill-actions">
+          ${skill.level < 99 && !skill._isBackgroundHack ? `<button class="btn-small" data-action="show-activities" data-skill-id="${skill.id}">Activities</button>` : ''}
+          ${skill.isActive ? `<button class="btn-small btn-danger" data-action="stop-skill" data-skill-id="${skill.id}">Stop</button>` : ''}
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // ==========================================
+  // Activity Picker Modal
+  // ==========================================
+  showActivityPicker(skill, activities) {
+    this.closePicker();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'picker-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) this.closePicker(); };
+
+    let html = `<div class="picker-modal">
+      <div class="picker-header">
+        <h3>${skill.icon} ${skill.name} — Activities</h3>
+        <button class="btn-small btn-danger" data-action="close-picker">X</button>
+      </div>
+      <div class="picker-list">`;
+
+    activities.forEach(act => {
+      const locked = skill.level < act.level;
+      const isCombat = !!act.enemy;
+      const isCurrentAction = skill.activeAction?.id === act.id;
+      const masteryLevel = skill.getMasteryLevel(act.id);
+
+      let rewardStr = '';
+      if (act.rewards) {
+        const parts = [];
+        if (act.rewards.currency) parts.push(`${act.rewards.currency.min}-${act.rewards.currency.max} E$`);
+        if (act.rewards.items) {
+          Object.entries(act.rewards.items).forEach(([item, range]) => {
+            if (range.max > 0) parts.push(`${range.min}-${range.max} ${item.replace(/_/g, ' ')}`);
+          });
+        }
+        if (parts.length > 0) rewardStr = `<div class="act-rewards">Rewards: ${parts.join(', ')}</div>`;
+      }
+      if (isCombat) {
+        rewardStr = `<div class="act-rewards">Combat: defeat enemies for loot</div>`;
+      }
+
+      html += `
+        <div class="act-item ${locked ? 'locked' : ''} ${isCurrentAction ? 'current' : ''}">
+          <div class="act-info">
+            <div class="act-name">${act.name}</div>
+            <div class="act-details">
+              ${locked ? `<span class="act-locked">Requires level ${act.level}</span>` : ''}
+              ${!locked && !isCombat ? `<span>Duration: ${act.duration}s</span>` : ''}
+              <span>+${act.xp} XP</span>
+              ${masteryLevel > 1 ? `<span class="mastery-badge">🔷 Mastery ${masteryLevel}</span>` : ''}
+            </div>
+            ${rewardStr}
+          </div>
+          <div class="act-action">
+            ${locked
+              ? '<span class="act-lock-icon">🔒</span>'
+              : isCurrentAction
+                ? '<span class="badge-active">ACTIVE</span>'
+                : `<button class="btn-small" data-action="start-activity" data-skill-id="${skill.id}" data-action-id="${act.id}">Start</button>`
+            }
+          </div>
+        </div>`;
+    });
+
+    html += `</div></div>`;
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+    this.pickerOverlay = overlay;
+
+    // Add close button handler
+    const closeBtn = overlay.querySelector('[data-action="close-picker"]');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.closePicker());
+    }
+  }
+
+  closePicker() {
+    if (this.pickerOverlay) {
+      this.pickerOverlay.remove();
+      this.pickerOverlay = null;
+    }
+    // Also remove any leftover
+    document.querySelectorAll('.picker-overlay').forEach(el => el.remove());
+  }
+
+  // ==========================================
+  // Combat View
+  // ==========================================
+  updateCombatView() {
+    const game = getGame();
+    if (!game) return;
+    const combatEl = document.getElementById('combat-status');
+    if (!combatEl) return;
+
+    if (!game.combat.isActive || !game.combat.currentEnemy) {
+      combatEl.style.display = 'none';
+      return;
+    }
+
+    combatEl.style.display = 'block';
+    const enemy = game.combat.currentEnemy;
+    const enemyHpPercent = Math.max(0, (enemy.hp / enemy.maxHp) * 100);
+    const playerHpPercent = Math.max(0, (game.combat.playerHp / game.combat.maxPlayerHp) * 100);
+
+    // Find which skill is currently running combat
+    const combatSkill = game.skillManager.getAllSkills().find(s => s.isActive && s.activeAction?.enemy) || { id: 'combat' };
+
+    // Get active ability buffs
+    let buffsHtml = '';
+    if (game.abilityManager) {
+      const abilityBuffs = game.abilityManager.getActiveBuffs();
+      const activeEffects = game.abilityManager.activeEffects;
+      if (activeEffects.length > 0) {
+        buffsHtml = '<div class="combat-buffs">';
+        const seen = new Set();
+        for (const eff of activeEffects) {
+          const key = eff.buffType;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const buffLabels = {
+            damage: '⚔️ +DMG', defense: '🛡️ +DEF', speed: '⚡ +SPD',
+            critChance: '🎯 +CRIT', critDamage: '💥 +CRIT DMG', evasion: '💨 +EVA',
+            shield: '🔰 SHIELD', enemyDamageReduce: '📉 -E.DMG', enemyDefenseReduce: '📉 -E.DEF',
+            enemyVulnerability: '🎯 VULN', stun: '⚡ STUN', invulnerable: '✨ INVULN',
+            dot: '🔥 DoT',
+          };
+          const label = buffLabels[key] || key;
+          buffsHtml += `<span class="combat-buff-tag">${label} ${eff.remaining}s</span>`;
+        }
+        buffsHtml += '</div>';
+      }
+    }
+
+    combatEl.innerHTML = `
+      <div class="combat-container">
+        <div class="combat-player">
+          <h3>You</h3>
+          <div class="hp-bar-player">
+            <div class="hp-fill" style="width: ${playerHpPercent}%"></div>
+          </div>
+          <p>${game.combat.playerHp} / ${game.combat.maxPlayerHp} HP</p>
+        </div>
+        <div class="combat-vs">VS</div>
+        <div class="combat-enemy">
+          ${enemy.isBoss ? '<div class="boss-indicator">BOSS</div>' : ''}
+          <h3>${enemy.name}</h3>
+          ${enemy.isEnraged ? '<div class="enraged-indicator">ENRAGED!</div>' : ''}
+          <div class="hp-bar-enemy">
+            <div class="hp-fill" style="width: ${enemyHpPercent}%"></div>
+          </div>
+          <p>${enemy.hp} / ${enemy.maxHp} HP</p>
+        </div>
+      </div>
+      ${buffsHtml}
+      <div class="combat-actions">
+        <button class="btn-small btn-danger" data-action="stop-skill" data-skill-id="${combatSkill.id}">Flee</button>
+      </div>
+    `;
+  }
+
+  // ==========================================
+  // Currency display
+  // ==========================================
+  updateCurrencyDisplay() {
+    const game = getGame();
+    if (!game) return;
+    const currEl = document.getElementById('currency-display');
+    if (currEl) {
+      currEl.textContent = `E$ ${game.economy.getCurrency().toLocaleString()}`;
+    }
+  }
+
+  // ==========================================
+  // Inventory View
+  // ==========================================
+   renderInventoryView() {
+    const game = getGame();
+    if (!game) return;
+    const container = document.getElementById('inventory-container');
+    if (!container) return;
+
+    const items = game.inventory.getSummary();
+    const equipped = game.equipment.getEquipped();
+
+    const rarityColors = {
+      common: '#cccccc',
+      uncommon: '#00ff41',
+      rare: '#0099ff',
+      epic: '#ff00ff',
+      legendary: '#ffff00',
+    };
+
+    let html = '';
+
+    // Equipment section
+    html += '<div class="inv-section"><h3 class="inv-section-title">EQUIPPED</h3><div class="equipment-slots">';
+    ['weapon', 'armor', 'cyberware'].forEach(slot => {
+      const item = equipped[slot];
+      const rarityColor = item ? (rarityColors[item.rarity] || '#cccccc') : '';
+      html += `<div class="equip-slot">
+        <div class="equip-slot-label">${slot.toUpperCase()}</div>
+        ${item
+          ? `<div class="equip-slot-item" style="border-left: 3px solid ${rarityColor}">${item.icon} ${item.name}${item.rarity && item.rarity !== 'common' ? ` <span class="rarity-badge" style="color:${rarityColor}">[${item.rarity.toUpperCase()}]</span>` : ''}</div>
+             <button class="btn-small btn-danger" data-action="unequip-item" data-slot="${slot}">Unequip</button>`
+          : `<div class="equip-slot-empty">Empty</div>`
+        }
+      </div>`;
+    });
+    html += '</div></div>';
+
+    // Items section
+    html += '<div class="inv-section"><h3 class="inv-section-title">ITEMS</h3>';
+    if (items.length === 0) {
+      html += '<p class="inv-empty">No items yet. Start grinding!</p>';
+    } else {
+      html += '<div class="inv-grid">';
+      items.forEach(item => {
+        const isEquippable = ['weapon', 'armor', 'cyberware'].includes(item.type);
+        const canSell = item.value > 0;
+        const rarityColor = rarityColors[item.rarity] || '#cccccc';
+        const rarityClass = item.rarity || 'common';
+        html += `<div class="inventory-item rarity-${rarityClass}" style="border-color: ${rarityColor}">
+          <div class="inventory-icon">${item.icon}</div>
+          <div class="inventory-name">${item.name}${item.rarity && item.rarity !== 'common' ? ` <span class="rarity-badge" style="color:${rarityColor}">[${item.rarity.toUpperCase()}]</span>` : ''}</div>
+          <div class="inventory-qty">x${item.quantity}</div>
+          <div class="inventory-actions">
+            ${isEquippable ? `<button class="btn-small" data-action="equip-item" data-item-id="${item.id}">Equip</button>` : ''}
+            ${canSell ? `<button class="btn-small" data-action="sell-item" data-item-id="${item.id}" data-quantity="1">Sell (${item.value} E$)</button>` : ''}
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    container.innerHTML = html;
+  }
+
+  // ==========================================
+  // Achievements View
+  // ==========================================
+  renderAchievementsView() {
+    const game = getGame();
+    if (!game) return;
+    const container = document.getElementById('achievements-container');
+    if (!container) return;
+
+    const achievements = game.achievements.getAll();
+    let html = `<div class="ach-summary">${game.achievements.getUnlockedCount()} / ${achievements.length} Unlocked</div>`;
+    html += '<div class="ach-grid">';
+
+    achievements.forEach(ach => {
+      html += `<div class="ach-card ${ach.unlocked ? 'unlocked' : 'locked'}">
+        <div class="ach-icon">${ach.unlocked ? '🏆' : '🔒'}</div>
+        <div class="ach-info">
+          <div class="ach-name">${ach.name}</div>
+          <div class="ach-desc">${ach.description}</div>
+        </div>
+      </div>`;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // ==========================================
+  // Shop View
+  // ==========================================
+  renderShopView() {
+    const game = getGame();
+    if (!game) return;
+    const container = document.getElementById('shop-container');
+    if (!container) return;
+
+    let html = '<div class="shop-grid">';
+    const rarityColors = {
+      common: '#cccccc',
+      uncommon: '#00ff41',
+      rare: '#0099ff',
+      epic: '#ff00ff',
+      legendary: '#ffff00',
+    };
+    SHOP_ITEMS.forEach(item => {
+      const canAfford = game.economy.getCurrency() >= item.cost;
+      // Look up item rarity from ITEMS
+      const itemKey = Object.keys(ITEMS).find(k => ITEMS[k].id === item.id);
+      const itemDef = itemKey ? ITEMS[itemKey] : null;
+      const rarity = itemDef?.rarity || 'common';
+      const rarityColor = rarityColors[rarity] || '#cccccc';
+      html += `<div class="shop-item ${canAfford ? '' : 'unaffordable'} rarity-${rarity}">
+        <div class="shop-icon">${item.icon}</div>
+        <div class="shop-info">
+          <div class="shop-name">${item.name}${rarity !== 'common' ? ` <span class="rarity-badge" style="color:${rarityColor}">[${rarity.toUpperCase()}]</span>` : ''}</div>
+          <div class="shop-desc">${item.description}</div>
+          <div class="shop-cost">E$ ${item.cost.toLocaleString()}</div>
+        </div>
+        <button class="btn-small ${canAfford ? '' : 'disabled'}" 
+          data-action="buy-item"
+          data-item-id="${item.id}"
+          data-cost="${item.cost}"
+          data-quantity="${item.quantity || 1}"
+          ${canAfford ? '' : 'disabled'}>
+          Buy
+        </button>
+      </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // ==========================================
+  // Crafting View
+  // ==========================================
+  renderCraftingView() {
+    const game = getGame();
+    if (!game) return;
+    const container = document.getElementById('crafting-container');
+    if (!container) return;
+
+    const recipes = game.crafter.getAvailableRecipes();
+    let html = `<div class="craft-summary">${recipes.length} Recipes Available</div>`;
+    html += '<div class="craft-grid">';
+
+    if (recipes.length === 0) {
+      html += '<p class="craft-empty">Level up skills to unlock recipes!</p>';
+    } else {
+      Object.entries(CRAFT_RECIPES).forEach(([id, recipe]) => {
+        const available = recipes.some(r => r.id === id);
+        const canCraft = available && game.crafter.canCraft(id).can;
+
+        // Build inputs/outputs display
+        let inputsStr = Object.entries(recipe.inputs)
+          .map(([item, qty]) => `${qty}x ${item.replace(/_/g, ' ')}`)
+          .join(', ');
+        let outputsStr = Object.entries(recipe.outputs)
+          .map(([item, qty]) => `${qty}x ${item.replace(/_/g, ' ')}`)
+          .join(', ');
+
+        const reason = available ? game.crafter.canCraft(id).reason : `Requires ${recipe.requiredSkill} level ${recipe.level}`;
+
+        html += `<div class="craft-card ${available ? '' : 'locked'} ${canCraft ? 'craftable' : ''} ${recipe.category || ''}">
+          <div class="craft-name">${recipe.name}</div>
+          <div class="craft-req">Requires: ${recipe.requiredSkill} Lvl ${recipe.level}</div>
+          <div class="craft-inputs">Input: ${inputsStr}</div>
+          <div class="craft-outputs">Output: ${outputsStr}</div>
+          <div class="craft-cost">Cost: E$ ${recipe.currencyCost}</div>
+          ${available
+            ? `<button class="btn-small ${canCraft ? '' : 'disabled'}" 
+              data-action="craft" 
+              data-recipe-id="${id}"
+              ${canCraft ? '' : 'disabled'}>
+              ${canCraft ? 'Craft' : reason}
+            </button>`
+            : `<span class="craft-lock">🔒 ${reason}</span>`
+          }
+        </div>`;
+      });
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // ==========================================
+  // Prestige View
+  // ==========================================
+  renderPrestigeView() {
+    const game = getGame();
+    if (!game) return;
+    const container = document.getElementById('prestige-container');
+    if (!container) return;
+
+    const prestige = game.prestige;
+    const totalXP = Object.values(game.skillManager.skills)
+      .reduce((sum, skill) => sum + skill.xp, 0);
+    const nextPrestigeXP = Math.pow(prestige.level + 1, 2) * 500000;
+    const canPrestige = nextPrestigeXP <= totalXP;
+
+    let html = `<div class="prestige-info">
+      <div class="prestige-stat">
+        <div class="stat-label">Prestige Level</div>
+        <div class="stat-value">${prestige.level}</div>
+      </div>
+      <div class="prestige-stat">
+        <div class="stat-label">Total Resets</div>
+        <div class="stat-value">${prestige.totalResets}</div>
+      </div>
+      <div class="prestige-stat">
+        <div class="stat-label">Prestige Points</div>
+        <div class="stat-value">${prestige.points}</div>
+      </div>
+    </div>`;
+
+    // Bonuses display
+    html += `<div class="prestige-bonuses">
+      <h3>Permanent Bonuses</h3>
+      <div class="bonus-list">
+        <div class="bonus-item">XP Multiplier: +${((prestige.bonuses.xpMultiplier - 1) * 100).toFixed(0)}%</div>
+        <div class="bonus-item">Currency Multiplier: +${((prestige.bonuses.currencyMultiplier - 1) * 100).toFixed(0)}%</div>
+        <div class="bonus-item">Material Drop Bonus: +${prestige.bonuses.materialDropBonus}%</div>
+        <div class="bonus-item">Mastery XP Bonus: +${prestige.bonuses.masteryXpBonus}%</div>
+        <div class="bonus-item">Combat Damage Bonus: +${prestige.bonuses.combatDamageBonus || 0}%</div>
+        <div class="bonus-item">Offline Progress Bonus: +${prestige.bonuses.offlineBonus || 0}%</div>
+      </div>
+    </div>`;
+
+    // Prestige Upgrades Shop
+    html += `<div class="prestige-upgrades">
+      <h3>Prestige Upgrades</h3>
+      <div class="upgrade-grid">`;
+    
+    Object.entries(PRESTIGE_UPGRADES).forEach(([id, upgrade]) => {
+      const purchased = prestige.purchasedUpgrades[id];
+      const canAfford = prestige.points >= upgrade.cost;
+      html += `<div class="upgrade-card ${purchased ? 'purchased' : ''} ${canAfford && !purchased ? 'affordable' : ''}">
+        <div class="upgrade-name">${upgrade.name}</div>
+        <div class="upgrade-desc">${upgrade.description}</div>
+        <div class="upgrade-cost">${upgrade.cost} Points</div>
+        ${purchased
+          ? '<span class="upgrade-owned">OWNED</span>'
+          : `<button class="btn-small ${canAfford ? '' : 'disabled'}" 
+              data-action="buy-prestige-upgrade" 
+              data-upgrade-id="${id}"
+              ${canAfford ? '' : 'disabled'}>
+              Buy
+            </button>`
+        }
+      </div>`;
+    });
+    
+    html += '</div></div>';
+
+    // Prestige button
+    html += `<div class="prestige-action">
+      <div class="prestige-progress">
+        <div class="prestige-label">Progress to next Prestige: ${totalXP.toLocaleString()} / ${nextPrestigeXP.toLocaleString()} XP</div>
+        <div class="prestige-bar">
+          <div class="prestige-fill" style="width: ${Math.min(100, (totalXP / nextPrestigeXP) * 100)}%"></div>
+        </div>
+      </div>
+      <button class="btn-large ${canPrestige ? '' : 'disabled'}" 
+        data-action="prestige"
+        ${canPrestige ? '' : 'disabled'}>
+        ${canPrestige ? 'PRESTIGE' : 'Need More XP'}
+      </button>
+    </div>`;
+
+    container.innerHTML = html;
+  }
+
+  // ==========================================
+  // Passives & Abilities View
+  // ==========================================
+  renderPassivesView() {
+    const game = getGame();
+    if (!game) return;
+    const container = document.getElementById('passives-container');
+    if (!container) return;
+
+    const stats = game.passiveStats ? game.passiveStats.getStats() : {};
+    const breakdown = game.passiveStats ? game.passiveStats.getBreakdown() : {};
+
+    const statMeta = [
+      { key: 'maxHP',         label: 'Max HP',         icon: '❤️', unit: '',  decimals: 0, color: '#ff1744' },
+      { key: 'attackPower',   label: 'Attack Power',   icon: '⚔️', unit: '',  decimals: 1, color: '#ff6600' },
+      { key: 'defense',       label: 'Defense',        icon: '🛡️', unit: '',  decimals: 1, color: '#00d4ff' },
+      { key: 'evasion',       label: 'Evasion',        icon: '💨', unit: '%', decimals: 1, color: '#00ff41' },
+      { key: 'critChance',    label: 'Crit Chance',    icon: '🎯', unit: '%', decimals: 1, color: '#ffff00' },
+      { key: 'critDamage',    label: 'Crit Damage',    icon: '💥', unit: '%', decimals: 1, color: '#ff00ff' },
+      { key: 'xpBonus',       label: 'XP Bonus',       icon: '⭐', unit: '%', decimals: 1, color: '#00ff41' },
+      { key: 'currencyBonus', label: 'Currency Bonus',  icon: '💰', unit: '%', decimals: 1, color: '#00d4ff' },
+      { key: 'actionSpeed',   label: 'Action Speed',   icon: '⚡', unit: '%', decimals: 1, color: '#ffff00' },
+      { key: 'lootBonus',     label: 'Loot Bonus',     icon: '💎', unit: '%', decimals: 1, color: '#ff00ff' },
+    ];
+
+    let html = '';
+
+    // --- Passive Stats Panel ---
+    html += '<div class="passives-section"><h3 class="passives-section-title">PASSIVE STATS</h3>';
+    html += '<div class="passive-stats-grid">';
+    for (const meta of statMeta) {
+      const val = stats[meta.key] || 0;
+      const bd = breakdown[meta.key] || { base: 0, skills: 0, equipment: 0, prestige: 0 };
+      const displayVal = meta.decimals === 0 ? Math.floor(val) : val.toFixed(meta.decimals);
+
+      // Build breakdown tooltip parts
+      const parts = [];
+      if (bd.base) parts.push(`Base: ${bd.base}`);
+      if (bd.skills) parts.push(`Skills: +${bd.skills.toFixed(1)}`);
+      if (bd.equipment) parts.push(`Equip: +${bd.equipment.toFixed(1)}`);
+      if (bd.prestige) parts.push(`Prestige: +${bd.prestige.toFixed(1)}`);
+
+      html += `<div class="passive-stat-card" style="border-color: ${meta.color}22">
+        <div class="passive-stat-icon">${meta.icon}</div>
+        <div class="passive-stat-info">
+          <div class="passive-stat-label">${meta.label}</div>
+          <div class="passive-stat-value" style="color: ${meta.color}">${displayVal}${meta.unit}</div>
+        </div>
+        <div class="passive-stat-breakdown">${parts.join(' | ')}</div>
+      </div>`;
+    }
+    html += '</div></div>';
+
+    // --- Abilities Panel ---
+    html += '<div class="passives-section"><h3 class="passives-section-title">COMBAT ABILITIES</h3>';
+    html += '<p class="passives-hint">Select one ability per skill. Auto-cast activates at mastery 50+.</p>';
+
+    const categories = [
+      { id: 'hacking',    name: 'HACKING',    color: '#00ff41' },
+      { id: 'netrunning', name: 'NETRUNNING',  color: '#00d4ff' },
+      { id: 'street',     name: 'STREET',      color: '#ff00ff' },
+      { id: 'tech',       name: 'TECH',        color: '#ffff00' },
+      { id: 'fixer',      name: 'FIXER',       color: '#ff6600' },
+      { id: 'ripper',     name: 'RIPPER',      color: '#ff0099' },
+    ];
+
+    // Build a map of skillId -> SKILLS def for category lookup
+    const skillDefs = {};
+    Object.values(SKILLS).forEach(s => { skillDefs[s.id] = s; });
+
+    for (const cat of categories) {
+      // Get skills in this category
+      const catSkillIds = Object.values(SKILLS).filter(s => s.category === cat.id).map(s => s.id);
+      if (catSkillIds.length === 0) continue;
+
+      // Check if any skill in this category has abilities
+      const hasAbilities = catSkillIds.some(sid => SKILL_ABILITIES[sid] && SKILL_ABILITIES[sid].length > 0);
+      if (!hasAbilities) continue;
+
+      html += `<div class="ability-category">
+        <h4 class="ability-category-title" style="color: ${cat.color}">${cat.name}</h4>
+        <div class="ability-skills-list">`;
+
+      for (const skillId of catSkillIds) {
+        const skillAbilities = game.abilityManager
+          ? game.abilityManager.getAbilitiesForSkill(skillId)
+          : [];
+        if (skillAbilities.length === 0) continue;
+
+        const skillDef = skillDefs[skillId];
+        const skill = game.skillManager.getSkill(skillId);
+        const skillLevel = skill ? skill.level : 1;
+
+        html += `<div class="ability-skill-group">
+          <div class="ability-skill-header">
+            <span class="ability-skill-icon">${skillDef.icon}</span>
+            <span class="ability-skill-name">${skillDef.name}</span>
+            <span class="ability-skill-level">Lvl ${skillLevel}</span>
+          </div>
+          <div class="ability-cards">`;
+
+        for (const ab of skillAbilities) {
+          const lockedClass = !ab.unlocked ? 'ability-locked' : '';
+          const selectedClass = ab.selected ? 'ability-selected' : '';
+          const autocastClass = ab.autocast ? 'ability-autocast' : '';
+          const cdActive = ab.cooldownRemaining > 0;
+
+          const typeColors = { damage: '#ff1744', heal: '#00ff41', buff: '#00d4ff', debuff: '#ff6600' };
+          const typeColor = typeColors[ab.type] || '#888';
+
+          html += `<div class="ability-card ${lockedClass} ${selectedClass} ${autocastClass}">
+            <div class="ability-card-top">
+              <span class="ability-icon">${ab.icon}</span>
+              <div class="ability-card-info">
+                <div class="ability-name">${ab.name}</div>
+                <div class="ability-type-tag" style="color: ${typeColor}">${ab.type.toUpperCase()}</div>
+              </div>
+              ${ab.autocast ? '<span class="ability-autocast-badge">AUTO</span>' : ''}
+            </div>
+            <div class="ability-desc">${ab.description}</div>
+            <div class="ability-details">
+              <span>Power: ${ab.power}</span>
+              <span>CD: ${ab.cooldown}s</span>
+              <span>Unlock: Lvl ${ab.level}</span>
+            </div>
+            <div class="ability-effect">${ab.effect}</div>
+            ${cdActive ? `<div class="ability-cd-bar"><div class="ability-cd-fill" style="width: ${(ab.cooldownRemaining / ab.cooldown) * 100}%"></div></div>` : ''}
+            <div class="ability-card-actions">
+              ${ab.unlocked
+                ? `<button class="btn-small ${ab.selected ? 'btn-danger' : ''}" data-action="select-ability" data-skill-id="${skillId}" data-ability-id="${ab.id}">
+                    ${ab.selected ? 'Deselect' : 'Select'}
+                  </button>`
+                : `<span class="ability-lock-msg">Requires Lvl ${ab.level}</span>`
+              }
+            </div>
+          </div>`;
+        }
+
+        html += '</div></div>';
+      }
+
+      html += '</div></div>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // ==========================================
+  // Changelog View
+  // ==========================================
+  renderChangelogView() {
+    const container = document.getElementById('changelog-container');
+    if (!container) return;
+
+    const changelog = [
+      {
+        version: '0.5.0',
+        date: 'April 2026',
+        title: 'The Parallel Hacking Update',
+        entries: [
+          { type: 'feature', text: 'Parallel Hacking — Equip cyberware with Parallel Hacking capability to run a hacking skill in the background while performing any other primary activity.' },
+          { type: 'feature', text: 'Background Hack Panel — Persistent status panel shows current background hack progress, efficiency, and controls.' },
+          { type: 'feature', text: 'Background Hack Picker — Dedicated activity picker for selecting which hacking skill and activity to run in background.' },
+          { type: 'feature', text: 'New Item: Multithreaded Link — Uncommon cyberware enabling Parallel Hacking. Available in shop for 4,000 E$.' },
+          { type: 'balance', text: 'Background hacks operate at 75% efficiency — reduced XP, currency, and item drops compared to primary activities.' },
+          { type: 'balance', text: 'Only non-combat hacking activities (Intrusion, Decryption, ICE Breaking, Daemon Coding) can run in background.' },
+          { type: 'feature', text: 'Updated cyberware: Neural Daemon, Quantum Implant, Godlike Quantum Core, and Neural Nexus Hub now also grant Parallel Hacking.' },
+        ],
+      },
+      {
+        version: '0.4.0',
+        date: 'March 2026',
+        title: 'The Passives & Abilities Update',
+        entries: [
+          { type: 'feature', text: 'Passive Stats System — All 24 skills now contribute passive bonuses (Max HP, Attack Power, Defense, Evasion, Crit Chance, Crit Damage, XP Bonus, Currency Bonus, Action Speed, Loot Bonus). Stats aggregate from skills, equipment, and prestige.' },
+          { type: 'feature', text: '72 Combat Abilities — 3 abilities per skill (damage, heal, buff, debuff). Unlocked at levels 15, 45, and 75. Select one per skill for combat use.' },
+          { type: 'feature', text: 'Auto-Cast System — Abilities auto-cast during combat when skill mastery reaches 50+ on any activity.' },
+          { type: 'feature', text: 'Passives & Abilities View — New combined page showing all passive stat breakdowns and ability selection interface.' },
+          { type: 'feature', text: 'Critical Hit System — Player attacks can crit based on Crit Chance stat. Crit Damage multiplier scales with skills and equipment.' },
+          { type: 'feature', text: 'Player Evasion — Dodge enemy attacks based on Evasion stat from Stealth and other skills.' },
+          { type: 'feature', text: 'Ability Effects in Combat — Stuns, shields, DoTs, damage/defense buffs, enemy debuffs all functional in combat tick loop.' },
+          { type: 'balance', text: 'Combat damage formula reworked to use PassiveStats as single source of truth for attack power and defense.' },
+          { type: 'balance', text: 'Max HP now scales with Cyberware Installation and Biotech skill levels.' },
+          { type: 'balance', text: 'Boss enemies now respect stun, vulnerability, and evasion mechanics from abilities.' },
+        ],
+      },
+      {
+        version: '0.3.0',
+        date: 'March 2026',
+        title: 'The Expansion Update',
+        entries: [
+          { type: 'feature', text: 'Item Rarity System — All items now have rarity tiers: Common, Uncommon, Rare, Epic, Legendary. Rarity is displayed in inventory with color-coded borders.' },
+          { type: 'feature', text: '5 Boss Enemies — Rogue Netrunner, Neon Samurai, Corporate Tyrant, Digital Phantom, Chrome Wraith. Bosses have enrage phases, evasion, and life steal mechanics.' },
+          { type: 'feature', text: '7 New Legendary Items — Plasma Rifle, Obsidian Combat Armor, Chrono-Infused Armor, Godlike Quantum Core, Neural Nexus Hub, Encrypted Core Shard, Prototype Nexus Core.' },
+          { type: 'feature', text: '7 Legendary Crafting Recipes — Forge endgame gear from rare materials and existing equipment.' },
+          { type: 'feature', text: '6 Transmutation Recipes — Convert low-tier materials into higher-tier ones. Scrap to Muscle, Data to Daemon Code, Fragments to Artifacts, and more.' },
+          { type: 'feature', text: '7 New Prestige Upgrades — XP Amplifier III, Profit Maximizer II, Loot Multiplier II, Mastery Accelerator II, Combat Protocol I & II, Idle Optimizer. Total: 12 upgrades (was 5).' },
+          { type: 'feature', text: 'Changelog View — You\'re reading it! Track all game updates in one place.' },
+          { type: 'balance', text: 'Prestige combat damage bonus now applies to all melee attacks.' },
+          { type: 'balance', text: 'Boss enemies scale with combat skill level for ongoing challenge.' },
+        ],
+      },
+      {
+        version: '0.2.0',
+        date: 'March 2026',
+        title: 'The Quality of Life Update',
+        entries: [
+          { type: 'fix', text: 'Equipment now persists across saves — no more losing gear on reload.' },
+          { type: 'fix', text: 'Game reset no longer orphans crafting and prestige systems.' },
+          { type: 'fix', text: 'Shop items (Legendary Blade, Quantum Implant, Neural Accelerator) now properly added to inventory on purchase.' },
+          { type: 'fix', text: 'Click delegation now works on button child elements (icons, spans).' },
+          { type: 'fix', text: 'Mobile bottom tabs no longer display on desktop.' },
+          { type: 'fix', text: 'Duplicate CSS rules consolidated for modals and buttons.' },
+          { type: 'feature', text: 'Equipment Effects Integration — Life Steal, XP Boost, Speed Boost, Loot Boost, Currency Boost now all functional.' },
+          { type: 'feature', text: 'Crafting now grants XP to the required skill.' },
+          { type: 'feature', text: 'Sell and Unequip buttons added to inventory.' },
+          { type: 'feature', text: 'Prestige upgrade purchase UI with buy buttons.' },
+          { type: 'feature', text: 'Mobile prestige tab added to bottom navigation bar.' },
+        ],
+      },
+      {
+        version: '0.1.0',
+        date: 'March 2026',
+        title: 'Initial Release',
+        entries: [
+          { type: 'feature', text: '24 skills across 6 categories: Hacking, Netrunning, Street, Tech, Fixer, Ripper.' },
+          { type: 'feature', text: '120+ activities with XP, mastery, and material rewards.' },
+          { type: 'feature', text: '11 enemy types with tick-based real-time combat.' },
+          { type: 'feature', text: '35+ items: weapons, armor, cyberware, consumables, crafting materials.' },
+          { type: 'feature', text: '20+ crafting recipes with skill requirements.' },
+          { type: 'feature', text: '20 shop items across 4 tiers.' },
+          { type: 'feature', text: 'Prestige system with 5 upgrades.' },
+          { type: 'feature', text: '14 achievements tracking milestones.' },
+          { type: 'feature', text: 'Offline progress up to 24 hours.' },
+          { type: 'feature', text: 'Auto-save every 30 seconds, with export/import.' },
+        ],
+      },
+    ];
+
+    const typeLabels = {
+      feature: { label: 'NEW', color: '#00ff41' },
+      fix: { label: 'FIX', color: '#ff6600' },
+      balance: { label: 'BAL', color: '#00d4ff' },
+    };
+
+    let html = '<div class="changelog-list">';
+
+    changelog.forEach(release => {
+      html += `<div class="changelog-release">
+        <div class="changelog-header">
+          <span class="changelog-version">v${release.version}</span>
+          <span class="changelog-date">${release.date}</span>
+        </div>
+        <div class="changelog-title">${release.title}</div>
+        <div class="changelog-entries">`;
+
+      release.entries.forEach(entry => {
+        const typeInfo = typeLabels[entry.type] || typeLabels.feature;
+        html += `<div class="changelog-entry">
+          <span class="changelog-tag" style="background: ${typeInfo.color}; color: #0a0e27;">${typeInfo.label}</span>
+          <span class="changelog-text">${entry.text}</span>
+        </div>`;
+      });
+
+      html += '</div></div>';
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // ==========================================
+  // Navigation
+  // ==========================================
+  navigate(view, category = null) {
+    this.currentView = view;
+    if (category) this.currentCategory = category;
+
+    // Hide all views
+    document.querySelectorAll('.view-content').forEach(el => el.classList.remove('active'));
+    const viewEl = document.getElementById(`view-${view}`);
+    if (viewEl) viewEl.classList.add('active');
+
+    // Render the specific view
+    if (view === 'skills') {
+      this.updateSkillListings();
+    } else if (view === 'inventory') {
+      this.renderInventoryView();
+    } else if (view === 'achievements') {
+      this.renderAchievementsView();
+    } else if (view === 'shop') {
+      this.renderShopView();
+    } else if (view === 'crafting') {
+      this.renderCraftingView();
+    } else if (view === 'prestige') {
+      this.renderPrestigeView();
+    } else if (view === 'passives') {
+      this.renderPassivesView();
+    } else if (view === 'changelog') {
+      this.renderChangelogView();
+    }
+  }
+
+  // ==========================================
+  // Init
+  // ==========================================
+  init() {
+    this.setupEventListeners();
+    this.updateCurrencyDisplay();
+    this.navigate('skills');
+    this.updateSkillListings();
+  }
+}

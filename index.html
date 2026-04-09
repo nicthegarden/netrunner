@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>NETRUNNER — Cyberpunk Idle Game</title>
+  <link rel="stylesheet" href="css/main.css">
+  <noscript>
+    <style>
+      body { background: #0a0e27; color: #ff1744; }
+      body::after {
+        content: 'JavaScript is required to play NETRUNNER';
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        font-size: 20px; text-align: center; z-index: 10000;
+      }
+    </style>
+  </noscript>
+</head>
+<body>
+  <div id="app">
+    <!-- Mobile Menu Toggle -->
+    <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Toggle menu">☰</button>
+
+    <!-- Sidebar Navigation -->
+    <div id="sidebar">
+      <h2>NETRUNNER</h2>
+      
+      <div class="currency-display">
+        <span id="currency-display">E$ 0</span>
+      </div>
+
+      <!-- Skill Categories -->
+      <div class="nav-section">
+        <h3>HACKING</h3>
+        <div class="nav-skills">
+          <button class="nav-btn" data-skill="intrusion" data-category="hacking">Intrusion</button>
+          <button class="nav-btn" data-skill="decryption" data-category="hacking">Decryption</button>
+          <button class="nav-btn" data-skill="ice_breaking" data-category="hacking">ICE Breaking</button>
+          <button class="nav-btn" data-skill="daemon_coding" data-category="hacking">Daemon Coding</button>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <h3>NETRUNNING</h3>
+        <div class="nav-skills">
+          <button class="nav-btn" data-skill="deep_dive" data-category="netrunning">Deep Dive</button>
+          <button class="nav-btn" data-skill="data_mining" data-category="netrunning">Data Mining</button>
+          <button class="nav-btn" data-skill="black_ice_combat" data-category="netrunning">Black ICE Combat</button>
+          <button class="nav-btn" data-skill="neural_surfing" data-category="netrunning">Neural Surfing</button>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <h3>STREET</h3>
+        <div class="nav-skills">
+          <button class="nav-btn" data-skill="combat" data-category="street">Combat</button>
+          <button class="nav-btn" data-skill="stealth" data-category="street">Stealth</button>
+          <button class="nav-btn" data-skill="street_cred" data-category="street">Street Cred</button>
+          <button class="nav-btn" data-skill="smuggling" data-category="street">Smuggling</button>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <h3>TECH</h3>
+        <div class="nav-skills">
+          <button class="nav-btn" data-skill="cyberware_crafting" data-category="tech">Cyberware Craft</button>
+          <button class="nav-btn" data-skill="weapon_modding" data-category="tech">Weapon Modding</button>
+          <button class="nav-btn" data-skill="vehicle_tuning" data-category="tech">Vehicle Tuning</button>
+          <button class="nav-btn" data-skill="drone_engineering" data-category="tech">Drone Engineering</button>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <h3>FIXER</h3>
+        <div class="nav-skills">
+          <button class="nav-btn" data-skill="trading" data-category="fixer">Trading</button>
+          <button class="nav-btn" data-skill="corpo_infiltration" data-category="fixer">Corpo Infiltration</button>
+          <button class="nav-btn" data-skill="info_brokering" data-category="fixer">Info Brokering</button>
+          <button class="nav-btn" data-skill="fencing" data-category="fixer">Fencing</button>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <h3>RIPPER</h3>
+        <div class="nav-skills">
+          <button class="nav-btn" data-skill="cyberware_installation" data-category="ripper">Cyberware Install</button>
+          <button class="nav-btn" data-skill="biotech" data-category="ripper">Biotech</button>
+          <button class="nav-btn" data-skill="neural_enhancement" data-category="ripper">Neural Enhancement</button>
+          <button class="nav-btn" data-skill="chrome_surgery" data-category="ripper">Chrome Surgery</button>
+        </div>
+      </div>
+
+      <!-- Utility nav buttons -->
+      <div class="nav-section nav-utility">
+        <button class="nav-btn nav-special" data-view="inventory">INVENTORY</button>
+        <button class="nav-btn nav-special" data-view="shop">SHOP</button>
+        <button class="nav-btn nav-special" data-view="achievements">ACHIEVEMENTS</button>
+        <button class="nav-btn nav-special" data-view="crafting">CRAFTING</button>
+        <button class="nav-btn nav-special" data-view="passives">PASSIVES</button>
+        <button class="nav-btn nav-special" data-view="prestige">PRESTIGE</button>
+        <button class="nav-btn nav-special" data-view="changelog">CHANGELOG</button>
+      </div>
+
+      <div class="nav-section nav-bottom">
+        <button class="btn-primary" id="btn-manual-save">Save</button>
+        <button class="btn-primary" id="btn-export-save">Export Save</button>
+        <button class="btn-primary" id="btn-import-save">Import Save</button>
+        <button class="btn-primary btn-danger" id="btn-reset-game">Reset Game</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content">
+      <div id="header">
+        <h1>NETRUNNER</h1>
+        <div class="header-buttons">
+          <button class="btn-primary" id="btn-header-save">Save</button>
+        </div>
+      </div>
+
+      <div id="content-area">
+        <!-- Progress Bars -->
+        <div id="progress-bars"></div>
+
+        <!-- Background Hack Status (shown when cyberware enables it) -->
+        <div id="background-hack-status" style="display:none;"></div>
+
+        <!-- Hacker Terminal (auto-scrolling code when hacking) -->
+        <div id="hacker-terminal" class="hacker-terminal" style="display:none;">
+          <div class="hacker-terminal-header">
+            <span class="hacker-terminal-title"><span class="hacker-terminal-dot"></span> NETRUNNER TERMINAL</span>
+            <span class="hacker-terminal-skill" id="hacker-terminal-skill"></span>
+            <button class="hacker-terminal-toggle" id="hacker-terminal-toggle" title="Minimize/Expand">_</button>
+          </div>
+          <div class="hacker-terminal-body" id="hacker-terminal-body">
+            <pre class="hacker-terminal-output" id="hacker-terminal-output"></pre>
+            <div class="hacker-terminal-cursor"></div>
+          </div>
+        </div>
+
+        <!-- Combat Status (hidden by default) -->
+        <div id="combat-status" style="display:none;"></div>
+
+        <!-- Skills View -->
+        <div id="view-skills" class="view-content active">
+          <div id="skills-container"></div>
+        </div>
+
+        <!-- Inventory View -->
+        <div id="view-inventory" class="view-content">
+          <h2 class="view-title">INVENTORY</h2>
+          <div id="inventory-container"></div>
+        </div>
+
+        <!-- Shop View -->
+        <div id="view-shop" class="view-content">
+          <h2 class="view-title">BLACK MARKET SHOP</h2>
+          <div id="shop-container"></div>
+        </div>
+
+        <!-- Achievements View -->
+        <div id="view-achievements" class="view-content">
+          <h2 class="view-title">ACHIEVEMENTS</h2>
+          <div id="achievements-container"></div>
+        </div>
+
+        <!-- Crafting View -->
+        <div id="view-crafting" class="view-content">
+          <h2 class="view-title">CRAFTING WORKSHOP</h2>
+          <div id="crafting-container"></div>
+        </div>
+
+        <!-- Prestige View -->
+        <div id="view-prestige" class="view-content">
+          <h2 class="view-title">PRESTIGE</h2>
+          <div id="prestige-container"></div>
+        </div>
+
+        <!-- Passives & Abilities View -->
+        <div id="view-passives" class="view-content">
+          <h2 class="view-title">PASSIVES & ABILITIES</h2>
+          <div id="passives-container"></div>
+        </div>
+
+        <!-- Changelog View -->
+        <div id="view-changelog" class="view-content">
+          <h2 class="view-title">CHANGELOG</h2>
+          <div id="changelog-container"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Tab Bar (Mobile) -->
+      <div id="bottom-tabs" class="bottom-tabs">
+        <button class="tab-btn" data-view="skills">Skills</button>
+        <button class="tab-btn" data-view="inventory">Inv</button>
+        <button class="tab-btn" data-view="shop">Shop</button>
+        <button class="tab-btn" data-view="crafting">Craft</button>
+        <button class="tab-btn" data-view="passives">Passives</button>
+        <button class="tab-btn" data-view="prestige">Prestige</button>
+        <button class="tab-btn" data-view="achievements">Achieve</button>
+        <button class="tab-btn" data-view="changelog">Log</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div id="notifications"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
