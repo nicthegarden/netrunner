@@ -1,0 +1,52 @@
+{
+  "name": "netrunner-multiplayer-backend",
+  "version": "1.0.0",
+  "description": "NETRUNNER multiplayer backend server",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.js"
+  },
+  "keywords": [
+    "netrunner",
+    "idle-game",
+    "multiplayer",
+    "pvp",
+    "guilds"
+  ],
+  "author": "NETRUNNER Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.5.4",
+    "mongoose": "^7.0.0",
+    "passport": "^0.6.0",
+    "passport-github2": "^0.1.12",
+    "passport-google-oauth20": "^2.0.0",
+    "express-session": "^1.17.3",
+    "dotenv": "^16.0.3",
+    "jsonwebtoken": "^9.0.0",
+    "bcryptjs": "^2.4.3",
+    "node-cron": "^3.0.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "express-rate-limit": "^6.7.0",
+    "axios": "^1.4.0",
+    "joi": "^17.9.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20",
+    "jest": "^29.5.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.40.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
