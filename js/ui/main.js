@@ -942,6 +942,33 @@ export class UI {
 
     const changelog = [
       {
+        version: '0.8.0',
+        date: 'April 10, 2026',
+        title: 'The Authentication & Admin Panel Update',
+        entries: [
+          { type: 'feature', text: 'User Authentication System — Complete password-based authentication with SHA-256 hashing, JWT tokens, and secure session management.' },
+          { type: 'feature', text: 'Account Registration — Users can create accounts with username, password, and optional email. Passwords must be 6+ characters with strength validation.' },
+          { type: 'feature', text: 'Persistent Login — Login system with "Remember Me" functionality. Sessions stored in database with 7-day default or 30-day extended duration.' },
+          { type: 'feature', text: 'JWT Access Tokens — Short-lived access tokens (15 min) + long-lived refresh tokens (7 days) for secure API access. Auto-refresh supported.' },
+          { type: 'feature', text: 'Server-Side Game Saves — Game state persisted to SQLite database. Saves include player profile, skills, inventory, economy, equipment, combat state, prestige, abilities, and living world data.' },
+          { type: 'feature', text: 'Save Management — Upload/download latest save, view save history with timestamps, restore from any previous save, soft-delete old saves. Playtime tracked per save.' },
+          { type: 'feature', text: 'Admin Dashboard API — Complete admin system with user management, player moderation, and server statistics (192.168.1.X IP range only).' },
+          { type: 'feature', text: 'User Management — List all users with stats, view detailed user info, ban/unban accounts with reasons, reset player progress, nerf stats by multiplier.' },
+          { type: 'feature', text: 'IP Blocking System — Block/unblock IP addresses temporarily or permanently. Useful for dealing with cheaters or troublemakers on local network.' },
+          { type: 'feature', text: 'Audit Logging — All admin actions logged with timestamp, admin name, target user, and action details. Accessible via /api/admin/actions.' },
+          { type: 'feature', text: 'Server Statistics — Dashboard showing total users, banned accounts, total saves, total playtime in hours.' },
+          { type: 'security', text: 'IP-Based Access Control — Admin endpoints restricted to 192.168.1.X IP range. Prevents remote access to admin panel.' },
+          { type: 'security', text: 'Password Hashing — All passwords hashed with SHA-256 before storage. Never stored in plaintext.' },
+          { type: 'security', text: 'JWT Verification — All protected endpoints verify token validity and check session exists in database.' },
+          { type: 'security', text: 'Session Tracking — Sessions include IP address and user agent for security auditing.' },
+          { type: 'security', text: 'Banned Account Enforcement — Banned users cannot login. All active sessions deleted on ban.' },
+          { type: 'balance', text: 'Admin Actions: Ban removes login access; Reset clears all saves/stats; Nerf applies multiplier to XP and currency; Block IP prevents network access.' },
+          { type: 'data', text: 'Database Enhanced: 15 tables total — users, sessions, game_saves, player_profiles, admin_actions, blocked_ips, player_flags (+ legacy tables for multiplayer).' },
+          { type: 'backend', text: 'Node.js/Express backend with SQLite3. Listens on port 3000. Serves both API and static files.' },
+          { type: 'backend', text: 'New Dependencies: jsonwebtoken (JWT handling), crypto (password hashing via Node.js built-in).' },
+        ],
+      },
+      {
         version: '0.7.0',
         date: 'April 10, 2026',
         title: 'The Living World Update',
@@ -957,6 +984,7 @@ export class UI {
           { type: 'balance', text: 'World Events apply multiplicative bonuses at the system level — contracts and skill XP both benefit, creating emergent gameplay during event windows.' },
           { type: 'balance', text: 'Contract difficulty affects reward scaling: easy 0.8x, medium 1.0x, hard 1.5x, very_hard 2.0x. Player level advantage and prestige further scale rewards.' },
           { type: 'balance', text: 'Faction reputation gains +10 for contract completion, +5 for successful PvP hack, -3 for failed hack. Encourages engagement with all systems.' },
+          { type: 'fix', text: 'Living World persistence fixed — saves properly deserialized on reload with fresh contracts/targets if expired.' },
         ],
       },
       {
