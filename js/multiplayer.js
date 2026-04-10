@@ -169,7 +169,7 @@ export class MultiplayerManager {
     }
 
     try {
-      const result = await this.client.pvp.challengePlayer(playerName, parseInt(wagerAmount));
+      const result = await this.client.challengePlayer(playerName, { wager: parseInt(wagerAmount) });
       this.showNotification(`✓ Challenge sent to ${result.opponent}! Wager: E$ ${wagerAmount}`);
       this.refreshPvPUI();
     } catch (error) {
@@ -184,7 +184,7 @@ export class MultiplayerManager {
     if (!tag) return;
 
     try {
-      const guild = await this.client.guilds.create({ name, tag });
+      const guild = await this.client.createGuild({ name, tag });
       this.showNotification(`✓ Guild created: ${guild.name}`);
       this.refreshGuildUI();
     } catch (error) {
@@ -207,7 +207,7 @@ export class MultiplayerManager {
       
       if (!stats) {
         // Cache miss - fetch from API
-        stats = await this.client.pvp.getStats(playerUsername);
+        stats = await this.client.getPvPStats(playerUsername);
         this.cache.set(cacheKey, stats);
         console.log('PvP stats fetched from API');
       } else {
@@ -235,7 +235,7 @@ export class MultiplayerManager {
       let leaderboard = this.cache.get(leaderboardCacheKey);
       
       if (!leaderboard) {
-        leaderboard = await this.client.leaderboards.getELO();
+        leaderboard = await this.client.getELOLeaderboard();
         this.cache.set(leaderboardCacheKey, leaderboard);
         console.log('Leaderboard fetched from API');
       } else {
@@ -265,7 +265,7 @@ export class MultiplayerManager {
       let guilds = this.cache.get(guildsCacheKey);
       
       if (!guilds) {
-        guilds = await this.client.guilds.list();
+        guilds = await this.client.getGuilds();
         this.cache.set(guildsCacheKey, guilds);
         console.log('Guilds fetched from API');
       } else {
@@ -291,7 +291,7 @@ export class MultiplayerManager {
       let events = this.cache.get(eventsCacheKey);
       
       if (!events) {
-        events = await this.client.events.list();
+        events = await this.client.getEvents();
         this.cache.set(eventsCacheKey, events);
         console.log('Events fetched from API');
       } else {
@@ -404,7 +404,9 @@ export class MultiplayerManager {
       let myGuild = this.cache.get(myGuildCacheKey);
       
       if (!myGuild) {
-        myGuild = await this.client.guilds.getMyGuild(playerUsername);
+        // Fetch user's guilds by getting all guilds
+        const allGuilds = await this.client.getGuilds();
+        myGuild = allGuilds && allGuilds.length > 0 ? allGuilds[0] : null;
         this.cache.set(myGuildCacheKey, myGuild);
         console.log('My guild fetched from API');
       } else {
@@ -471,7 +473,7 @@ export class MultiplayerManager {
       let guildWars = this.cache.get(guildWarsCacheKey);
       
       if (!guildWars) {
-        guildWars = await this.client.events.listGuildWars();
+        guildWars = await this.client.getEvents();
         this.cache.set(guildWarsCacheKey, guildWars);
         console.log('Guild wars fetched from API');
       } else {
