@@ -407,10 +407,43 @@ export class LivingWorld {
     
     if (data.worldState) {
       this.worldState = data.worldState;
+    } else {
+      // Initialize if missing
+      this.worldState = createInitialWorldState();
     }
     
     if (data.leaderboards) {
       this.leaderboards = data.leaderboards;
+    } else {
+      // Initialize if missing
+      this.initializeLeaderboards();
+    }
+
+    // Ensure activeContracts array exists and initialize if empty
+    if (!this.worldState.activeContracts || this.worldState.activeContracts.length === 0) {
+      this.worldState.activeContracts = [];
+      this.refreshContracts();
+    } else {
+      // If all contracts are expired, refresh
+      const availableContracts = this.getAvailableContracts();
+      if (availableContracts.length === 0) {
+        this.refreshContracts();
+      }
+    }
+
+    // Ensure PvP targets exist
+    if (!this.worldState.pvpTargets || this.worldState.pvpTargets.length === 0) {
+      this.generatePvPTargets(50);
+    }
+
+    // Ensure faction reputation exists
+    if (!this.worldState.factionReputation) {
+      this.worldState.factionReputation = {
+        chrome_syndicate: 0,
+        arasaka_corp: 0,
+        street_crew: 0,
+        blackwall_collective: 0,
+      };
     }
   }
 }

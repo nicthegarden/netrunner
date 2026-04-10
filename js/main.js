@@ -344,9 +344,10 @@ export class Game {
     this.abilityManager = new AbilityManager(this.skillManager);
     this.skillManager.passiveStats = this.passiveStats; // Wire passive stats to SkillManager (XP/speed bonuses)
     this.economy.passiveStats = this.passiveStats; // Wire passive stats to Economy (currency bonus)
-    this.combat.passiveStats = this.passiveStats; // Wire passive stats to Combat
-    this.combat.abilityManager = this.abilityManager; // Wire abilities to Combat
-    this.gameLoop = new GameLoop(this);
+   this.combat.passiveStats = this.passiveStats; // Wire passive stats to Combat
+     this.combat.abilityManager = this.abilityManager; // Wire abilities to Combat
+     this.livingWorld = new LivingWorld(); // Recreate living world on reset
+     this.gameLoop = new GameLoop(this);
     // Re-use existing save manager but update reference
     this.saveManager.game = this;
     this.offlineProgress.game = this;
