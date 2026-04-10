@@ -2132,3 +2132,276 @@ body::before {
     grid-template-columns: 1fr;
   }
 }
+
+/* ========================================
+   MULTIPLAYER VIEWS STYLING
+   ======================================== */
+
+/* Leaderboard styling */
+.leaderboard-entry {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  background: rgba(0, 255, 65, 0.05);
+  border: 1px solid #00ff4133;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  font-family: 'Courier New', monospace;
+  transition: all 0.2s ease;
+}
+
+.leaderboard-entry:hover {
+  background: rgba(0, 255, 65, 0.1);
+  border-color: #00ff41;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.leaderboard-entry .rank {
+  display: inline-block;
+  width: 40px;
+  color: #ffff00;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.leaderboard-entry .name {
+  flex: 1;
+  color: #00ff41;
+  font-weight: bold;
+  margin-left: 15px;
+}
+
+.leaderboard-entry .value {
+  text-align: right;
+  color: #fff;
+  font-weight: bold;
+  min-width: 80px;
+}
+
+/* Guild cards */
+.guild-card {
+  padding: 15px;
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid #00d4ff33;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.guild-card:hover {
+  background: rgba(0, 212, 255, 0.12);
+  border-color: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.guild-card h4 {
+  color: #00d4ff;
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.guild-card p {
+  color: #aaa;
+  margin: 4px 0;
+  font-size: 12px;
+}
+
+.guild-card .btn-primary {
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* Event cards */
+.event-card {
+  padding: 15px;
+  background: rgba(255, 102, 0, 0.08);
+  border: 1px solid #ff660033;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.event-card:hover {
+  background: rgba(255, 102, 0, 0.12);
+  border-color: #ff6600;
+  box-shadow: 0 0 10px rgba(255, 102, 0, 0.3);
+}
+
+.event-card h4 {
+  color: #ff6600;
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.event-card p {
+  color: #aaa;
+  margin: 4px 0;
+  font-size: 12px;
+}
+
+.event-card .btn-primary {
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* PvP stats display */
+#pvp-stats {
+  background: rgba(255, 0, 255, 0.05);
+  border: 1px solid #ff00ff33;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+#pvp-stats p {
+  color: #fff;
+  margin: 8px 0;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#pvp-stats p:first-child {
+  color: #ffff00;
+  font-weight: bold;
+  border-bottom: 1px solid #ff00ff33;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+/* Guild management section */
+#my-guild {
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid #00d4ff33;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+  min-height: 80px;
+}
+
+#my-guild h5 {
+  color: #00d4ff;
+  margin: 0 0 10px 0;
+}
+
+#my-guild p {
+  color: #aaa;
+  margin: 4px 0;
+}
+
+/* Leaderboard tabs */
+#leaderboards-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #00ff4133;
+  padding-bottom: 10px;
+}
+
+.tab-btn {
+  padding: 8px 15px;
+  background: transparent;
+  border: 1px solid #00ff4133;
+  color: #aaa;
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-weight: bold;
+}
+
+.tab-btn:hover {
+  background: rgba(0, 255, 65, 0.1);
+  border-color: #00ff41;
+  color: #00ff41;
+}
+
+.tab-btn.active {
+  background: rgba(0, 255, 65, 0.2);
+  border-color: #00ff41;
+  color: #00ff41;
+}
+
+/* Multiplayer section headers */
+.multiplayer-section {
+  margin-bottom: 25px;
+}
+
+.multiplayer-section h3 {
+  color: #00ff41;
+  border-bottom: 2px solid #00ff4133;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 30px 15px;
+  color: #666;
+  font-style: italic;
+}
+
+.empty-state p {
+  margin: 10px 0;
+}
+
+/* Challenge button styling */
+#btn-challenge-player {
+  background: #ff00ff;
+  border: 1px solid #ff00ff;
+  color: #000;
+  font-weight: bold;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#btn-challenge-player:hover {
+  background: #ff00ff;
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.6);
+}
+
+/* Create guild button */
+#btn-create-guild {
+  width: 100%;
+  margin-top: 15px;
+}
+
+/* Responsive adjustments for multiplayer */
+@media (max-width: 768px) {
+  .leaderboard-entry {
+    flex-wrap: wrap;
+  }
+
+  .leaderboard-entry .name {
+    width: 100%;
+    margin: 8px 0;
+  }
+
+  .leaderboard-entry .value {
+    width: 100%;
+  }
+
+  .guild-card {
+    margin-bottom: 10px;
+  }
+
+  .event-card {
+    margin-bottom: 10px;
+  }
+
+  #leaderboards-tabs {
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    flex: 1;
+    min-width: 80px;
+  }
+}
