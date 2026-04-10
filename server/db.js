@@ -49,10 +49,14 @@ const db = {
   
   exec: (sql) => {
     return new Promise((resolve, reject) => {
-      dbInstance.exec(sql, (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
+      try {
+        dbInstance.exec(sql, function(err) {
+          if (err) reject(err);
+          else resolve();
+        });
+      } catch (err) {
+        reject(err);
+      }
     });
   }
 };
@@ -89,8 +93,8 @@ export async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        refresh_token VARCHAR(255) UNIQUE NOT NULL,
-        access_token VARCHAR(255) UNIQUE NOT NULL,
+        refresh_token VARCHAR(255) NOT NULL,
+        access_token VARCHAR(255) NOT NULL,
         expires_at DATETIME NOT NULL,
         remember_me BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

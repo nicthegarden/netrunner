@@ -63,8 +63,8 @@ router.post('/auth/register', async (req, res) => {
 
     // Create player profile
     await db.run(
-      `INSERT INTO player_profiles (user_id, created_at) 
-       VALUES (?, datetime('now'))`,
+      `INSERT INTO player_profiles (user_id) 
+       VALUES (?)`,
       [userId]
     );
 
@@ -75,8 +75,8 @@ router.post('/auth/register', async (req, res) => {
     // Store session
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
     await db.run(
-      `INSERT INTO sessions (user_id, access_token, refresh_token, expires_at, ip_address, created_at)
-       VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+      `INSERT INTO sessions (user_id, access_token, refresh_token, expires_at, ip_address)
+       VALUES (?, ?, ?, ?, ?)`,
       [userId, accessToken, refreshToken, expiresAt.toISOString(), req.ip]
     );
 
@@ -149,8 +149,8 @@ router.post('/auth/login', async (req, res) => {
     const expiresAt = new Date(Date.now() + expiresAtMs);
 
     await db.run(
-      `INSERT INTO sessions (user_id, access_token, refresh_token, expires_at, remember_me, ip_address, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
+      `INSERT INTO sessions (user_id, access_token, refresh_token, expires_at, remember_me, ip_address)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [user.id, accessToken, refreshToken, expiresAt.toISOString(), rememberMe ? 1 : 0, req.ip]
     );
 
