@@ -942,6 +942,24 @@ export class UI {
 
     const changelog = [
       {
+        version: '0.7.0',
+        date: 'April 10, 2026',
+        title: 'The Living World Update',
+        entries: [
+          { type: 'feature', text: 'Living World System — A dynamic, persistent cyberpunk economy with procedurally-generated rival netrunners, rotating faction contracts, and competitive leaderboards. All offline-first, no WebSocket required.' },
+          { type: 'feature', text: 'World Events — 7 weekly bonuses (Mega Hack Monday +25% hacking XP, Gang Warfare Wednesday +35%, etc.) + 4 seasonal events (Neon Festival, Corpo Summit, Street Fair, Blackwall Whispers). Auto-triggers based on calendar date.' },
+          { type: 'feature', text: 'Dynamic Contracts — 3-5 faction-issued missions available at any time, rotating every 60 minutes. 8 contract types across 4 factions: data heists, espionage, bounties, raids, weapon forges, cyberware mods. Accept → complete → claim rewards.' },
+          { type: 'feature', text: 'PvP Hacking System — Hack rival netrunners to steal loot and currency. Success chance: 50% + (playerLevel - targetLevel) * 2%. Success grants loot + faction rep; failure inflicts rep penalty. Risk/reward gameplay without real-time combat.' },
+          { type: 'feature', text: 'Faction Reputation — Track standing (-100 to +100) with 4 factions: Chrome Syndicate (elite hackers), Arasaka Corp (megacorp), Street Crew Coalition (gangs), Blackwall Collective (rogue AI). Status changes from Ally → Friendly → Neutral → Hostile → Enemy.' },
+          { type: 'feature', text: 'Persistent Leaderboards — Top 100 per skill with procedurally-named NPC rivals. Deterministic seeding ensures same names across sessions. Compete with rivals like "ShadowBreaker," "CyberRunner5," "NetspaceKing." Player rank displayed in context of rivals.' },
+          { type: 'feature', text: 'Living World View — New UI page consolidating all world content: active events, available contracts, faction standings, rival hacking targets, and skill leaderboards. Color-coded difficulty indicators and success chance percentages.' },
+          { type: 'feature', text: 'Faction-Specific Loot Pools — Contract and PvP hack rewards vary by faction (Hacker Vault, Street Bounty, Corp Vault, Blackwall Cache). Rewards scale by player level and prestige multiplier.' },
+          { type: 'balance', text: 'World Events apply multiplicative bonuses at the system level — contracts and skill XP both benefit, creating emergent gameplay during event windows.' },
+          { type: 'balance', text: 'Contract difficulty affects reward scaling: easy 0.8x, medium 1.0x, hard 1.5x, very_hard 2.0x. Player level advantage and prestige further scale rewards.' },
+          { type: 'balance', text: 'Faction reputation gains +10 for contract completion, +5 for successful PvP hack, -3 for failed hack. Encourages engagement with all systems.' },
+        ],
+      },
+      {
         version: '0.6.0',
         date: 'April 10, 2026',
         title: 'The Testing & Verification Update',

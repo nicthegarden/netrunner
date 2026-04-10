@@ -1,7 +1,7 @@
 {
   "name": "netrunner-multiplayer",
   "version": "1.0.0",
-  "description": "Multiplayer backend for NETRUNNER cyberpunk idle game",
+  "description": "Multiplayer backend for NETRUNNER cyberpunk idle game with authentication and admin panel",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -12,7 +12,9 @@
     "netrunner",
     "idle-game",
     "multiplayer",
-    "cyberpunk"
+    "cyberpunk",
+    "authentication",
+    "admin"
   ],
   "author": "",
   "license": "MIT",
@@ -22,6 +24,8 @@
     "cors": "^2.8.5",
     "body-parser": "^1.20.2",
     "ws": "^8.14.2",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "jsonwebtoken": "^9.1.0"
   }
 }
+

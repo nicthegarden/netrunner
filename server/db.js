@@ -1,9 +1,15 @@
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, 'game.db');
+
+// Utility function to hash passwords
+export function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
 
 // Initialize database
 const dbInstance = new sqlite3.Database(DB_PATH, (err) => {
@@ -59,7 +65,119 @@ export async function initializeDatabase() {
     // Enable foreign keys
     await db.exec('PRAGMA foreign_keys = ON');
 
-    // Players table
+    // ========== AUTHENTICATION & USER MANAGEMENT ==========
+    
+    // Users table (replaces old players table)
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username VARCHAR(32) UNIQUE NOT NULL,
+        password_hash VARCHAR(64) NOT NULL,
+        email VARCHAR(255),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_login DATETIME,
+        is_banned BOOLEAN DEFAULT 0,
+        ban_reason TEXT,
+        banned_at DATETIME,
+        is_admin BOOLEAN DEFAULT 0,
+        created_by_admin BOOLEAN DEFAULT 0
+      )
+    `);
+
+    // Sessions/Refresh tokens (for "Remember Me" functionality)
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        refresh_token VARCHAR(255) UNIQUE NOT NULL,
+        access_token VARCHAR(255) UNIQUE NOT NULL,
+        expires_at DATETIME NOT NULL,
+        remember_me BOOLEAN DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        ip_address VARCHAR(45),
+        user_agent TEXT
+      )
+    `);
+
+    // ========== PLAYER PROGRESS & SAVES ==========
+    
+    // Game saves (versioned save states)
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS game_saves (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        save_data TEXT NOT NULL,
+        version INTEGER DEFAULT 1,
+        save_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        is_latest BOOLEAN DEFAULT 1,
+        is_backup BOOLEAN DEFAULT 0,
+        client_checksum VARCHAR(64),
+        playtime_seconds INTEGER DEFAULT 0
+      )
+    `);
+
+    // Player profiles (cache of current progress)
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS player_profiles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        total_xp BIGINT DEFAULT 0,
+        prestige_level INTEGER DEFAULT 0,
+        avg_skill_level INTEGER DEFAULT 1,
+        playtime_seconds INTEGER DEFAULT 0,
+        currency_earned BIGINT DEFAULT 0,
+        currency_spent BIGINT DEFAULT 0,
+        combat_wins INTEGER DEFAULT 0,
+        last_save_timestamp DATETIME,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // ========== ADMIN & MODERATION ==========
+    
+    // Admin actions log (for auditing)
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS admin_actions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        admin_id INTEGER REFERENCES users(id),
+        target_user_id INTEGER REFERENCES users(id),
+        action_type VARCHAR(50) NOT NULL,
+        description TEXT,
+        details TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Blocked IPs
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS blocked_ips (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip_address VARCHAR(45) UNIQUE NOT NULL,
+        reason TEXT,
+        blocked_by_admin INTEGER REFERENCES users(id),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        expires_at DATETIME
+      )
+    `);
+
+    // Player suspicions/flags (for detecting cheaters)
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS player_flags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        flag_type VARCHAR(50),
+        reason TEXT,
+        severity VARCHAR(20),
+        resolved BOOLEAN DEFAULT 0,
+        resolved_by_admin INTEGER REFERENCES users(id),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        resolved_at DATETIME
+      )
+    `);
+
+    // ========== LIVING WORLD (from previous implementation) ==========
+    
+    // Players table (kept for compatibility with existing code)
     await db.exec(`
       CREATE TABLE IF NOT EXISTS players (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

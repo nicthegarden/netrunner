@@ -1,18 +1,28 @@
 import express from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import PlayerModel from '../models/player.js';
+import { db, hashPassword } from '../db.js';
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyToken,
+  checkBlockedIP,
+  authenticateToken
+} from '../middleware/auth.js';
 
 const router = express.Router();
 
-/**
- * POST /api/register
- * Register a new player with just a username
- */
-router.post('/register', async (req, res) => {
-  try {
-    const { username } = req.body;
+// Check IP before any auth operations
+router.use(checkBlockedIP);
 
-    // Validate
+/**
+ * POST /api/auth/register
+ * Register a new user account
+ * Body: { username, password, email? }
+ */
+router.post('/auth/register', async (req, res) => {
+  try {
+    const { username, password, email } = req.body;
+
+    // Validation
     if (!username || typeof username !== 'string') {
       return res.status(400).json({ error: 'Username is required' });
     }
@@ -21,83 +31,258 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Username must be 3-32 characters' });
     }
 
-    // Check if username already exists
-    const existing = await PlayerModel.getByUsername(username);
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    // Check if username exists
+    const existing = await db.get(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+
     if (existing) {
       return res.status(409).json({ error: 'Username already taken' });
     }
 
-    // Create player
-    const player = await PlayerModel.create(username);
+    // Hash password
+    const passwordHash = hashPassword(password);
 
-    // Generate simple token (stored in localStorage)
-    const token = uuidv4();
+    // Create user
+    const result = await db.run(
+      `INSERT INTO users (username, password_hash, email, created_at) 
+       VALUES (?, ?, ?, datetime('now'))`,
+      [username, passwordHash, email || null]
+    );
 
-    // Store token in memory (in production, could use Redis)
-    // For now, token is just UUID that client stores
-    if (!global.playerTokens) {
-      global.playerTokens = new Map();
-    }
-    global.playerTokens.set(token, {
-      playerId: player.id,
-      username: player.username,
-      createdAt: Date.now()
-    });
+    const userId = result.lastID;
+
+    // Create player profile
+    await db.run(
+      `INSERT INTO player_profiles (user_id, created_at) 
+       VALUES (?, datetime('now'))`,
+      [userId]
+    );
+
+    // Generate tokens
+    const accessToken = generateAccessToken(userId, username);
+    const refreshToken = generateRefreshToken(userId);
+
+    // Store session
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    await db.run(
+      `INSERT INTO sessions (user_id, access_token, refresh_token, expires_at, ip_address, created_at)
+       VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+      [userId, accessToken, refreshToken, expiresAt.toISOString(), req.ip]
+    );
 
     res.status(201).json({
       status: 'success',
-      player_id: player.id,
-      username: player.username,
-      token,
-      message: 'Player registered successfully'
+      message: 'Account created successfully',
+      user: { id: userId, username },
+      accessToken,
+      refreshToken
     });
 
   } catch (err) {
     console.error('Register error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Registration failed' });
   }
 });
 
 /**
- * GET /api/players/me
- * Get current player profile (requires token)
+ * POST /api/auth/login
+ * Login with username and password
+ * Body: { username, password, rememberMe? }
  */
-router.get('/players/me', async (req, res) => {
+router.post('/auth/login', async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
+    const { username, password, rememberMe } = req.body;
+
+    // Validation
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password required' });
     }
 
-    const tokenData = global.playerTokens?.get(token);
-    if (!tokenData) {
-      return res.status(401).json({ error: 'Invalid token' });
+    // Find user
+    const user = await db.get(
+      'SELECT id, username, password_hash, is_banned, ban_reason FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    const player = await PlayerModel.getById(tokenData.playerId);
-    if (!player) {
-      return res.status(404).json({ error: 'Player not found' });
+    // Check if banned
+    if (user.is_banned) {
+      return res.status(403).json({ 
+        error: 'Account is banned',
+        reason: user.ban_reason
+      });
     }
 
-    const guild = await PlayerModel.getGuild(player.id);
+    // Verify password
+    const passwordHash = hashPassword(password);
+    if (passwordHash !== user.password_hash) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    // Update last login
+    await db.run(
+      'UPDATE users SET last_login = datetime(\'now\') WHERE id = ?',
+      [user.id]
+    );
+
+    // Generate tokens
+    const accessToken = generateAccessToken(user.id, user.username);
+    const refreshToken = generateRefreshToken(user.id);
+
+    // Store session
+    const expiresAtMs = rememberMe 
+      ? 30 * 24 * 60 * 60 * 1000  // 30 days for "Remember Me"
+      : 7 * 24 * 60 * 60 * 1000;  // 7 days default
+    const expiresAt = new Date(Date.now() + expiresAtMs);
+
+    await db.run(
+      `INSERT INTO sessions (user_id, access_token, refresh_token, expires_at, remember_me, ip_address, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
+      [user.id, accessToken, refreshToken, expiresAt.toISOString(), rememberMe ? 1 : 0, req.ip]
+    );
 
     res.json({
       status: 'success',
-      player_id: player.id,
-      username: player.username,
-      total_xp: player.total_xp || 0,
-      prestige_level: player.prestige_level || 0,
-      avg_level: player.avg_level || 1,
-      playtime_seconds: player.playtime_seconds || 0,
-      guild_id: guild?.id || null,
-      guild_name: guild?.name || null,
-      last_sync: player.last_sync
+      message: 'Login successful',
+      user: { id: user.id, username: user.username },
+      accessToken,
+      refreshToken,
+      rememberMe
     });
 
   } catch (err) {
-    console.error('Get player error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+/**
+ * POST /api/auth/refresh
+ * Refresh expired access token using refresh token
+ * Body: { refreshToken }
+ */
+router.post('/auth/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'Refresh token required' });
+    }
+
+    // Verify refresh token
+    const decoded = verifyToken(refreshToken);
+    if (!decoded || decoded.type !== 'refresh') {
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+
+    // Find session
+    const session = await db.get(
+      `SELECT * FROM sessions WHERE refresh_token = ? AND expires_at > datetime('now')`,
+      [refreshToken]
+    );
+
+    if (!session) {
+      return res.status(401).json({ error: 'Session expired or not found' });
+    }
+
+    // Get user
+    const user = await db.get(
+      'SELECT username FROM users WHERE id = ?',
+      [decoded.userId]
+    );
+
+    // Generate new access token
+    const newAccessToken = generateAccessToken(decoded.userId, user.username);
+
+    // Update session
+    await db.run(
+      'UPDATE sessions SET access_token = ? WHERE id = ?',
+      [newAccessToken, session.id]
+    );
+
+    res.json({
+      status: 'success',
+      accessToken: newAccessToken
+    });
+
+  } catch (err) {
+    console.error('Refresh error:', err);
+    res.status(500).json({ error: 'Token refresh failed' });
+  }
+});
+
+/**
+ * POST /api/auth/logout
+ * Logout user (invalidate session)
+ */
+router.post('/auth/logout', authenticateToken, async (req, res) => {
+  try {
+    // Delete session
+    await db.run(
+      'DELETE FROM sessions WHERE user_id = ? AND expires_at > datetime(\'now\')',
+      [req.user.id]
+    );
+
+    res.json({ status: 'success', message: 'Logged out' });
+  } catch (err) {
+    console.error('Logout error:', err);
+    res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
+/**
+ * GET /api/auth/me
+ * Get current user profile
+ */
+router.get('/auth/me', authenticateToken, async (req, res) => {
+  try {
+    const user = await db.get(
+      `SELECT u.id, u.username, u.email, u.created_at, u.last_login, u.is_admin,
+              p.total_xp, p.prestige_level, p.playtime_seconds, p.currency_earned
+       FROM users u
+       LEFT JOIN player_profiles p ON u.id = p.user_id
+       WHERE u.id = ?`,
+      [req.user.id]
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      status: 'success',
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.is_admin,
+        createdAt: user.created_at,
+        lastLogin: user.last_login,
+        stats: {
+          totalXP: user.total_xp || 0,
+          prestigeLevel: user.prestige_level || 0,
+          playtimeSeconds: user.playtime_seconds || 0,
+          currencyEarned: user.currency_earned || 0
+        }
+      }
+    });
+
+  } catch (err) {
+    console.error('Get user error:', err);
+    res.status(500).json({ error: 'Failed to get user profile' });
   }
 });
 

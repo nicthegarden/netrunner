@@ -5,6 +5,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { initializeDatabase } from './db.js';
 import authRoutes from './routes/auth.js';
+import savesRoutes from './routes/saves.js';
+import adminRoutes from './routes/admin.js';
 import syncRoutes from './routes/sync.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -13,7 +15,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:8000', 'http://127.0.0.1:3000', 'http://127.0.0.1:8000'],
+  origin: ['http://localhost:3000', 'http://localhost:8000', 'http://127.0.0.1:3000', 'http://127.0.0.1:8000', 'http://192.168.1.*'],
   credentials: true
 }));
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -23,12 +25,10 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 console.log('Initializing database...');
 initializeDatabase();
 
-// Global storage for tokens (in-memory, for this week)
-// TODO: Move to Redis or persistent storage
-global.playerTokens = new Map();
-
 // Routes
 app.use('/api', authRoutes);
+app.use('/api', savesRoutes);
+app.use('/api', adminRoutes);
 app.use('/api', syncRoutes);
 
 // Health check
@@ -62,21 +62,42 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('╔════════════════════════════════════════════════╗');
-  console.log('║  NETRUNNER Multiplayer Server (Week 1)         ║');
+  console.log('║  NETRUNNER Server with Auth + Admin Panel      ║');
   console.log('╚════════════════════════════════════════════════╝');
   console.log('');
   console.log(`✓ Server running on http://localhost:${PORT}`);
   console.log(`✓ Database: game.db`);
   console.log('');
-  console.log('Available endpoints:');
-  console.log(`  POST   /api/register           - Register new player`);
-  console.log(`  GET    /api/players/me         - Get player profile`);
-  console.log(`  POST   /api/sync               - Sync offline changes`);
-  console.log(`  GET    /api/sync/status        - Check sync status`);
-  console.log(`  GET    /health                 - Health check`);
+  console.log('Authentication Endpoints:');
+  console.log(`  POST   /api/auth/register           - Register new account`);
+  console.log(`  POST   /api/auth/login              - Login with username/password`);
+  console.log(`  POST   /api/auth/refresh            - Refresh access token`);
+  console.log(`  POST   /api/auth/logout             - Logout`);
+  console.log(`  GET    /api/auth/me                 - Get user profile`);
+  console.log('');
+  console.log('Save/Load Endpoints:');
+  console.log(`  POST   /api/saves/upload            - Upload game save`);
+  console.log(`  GET    /api/saves/latest            - Download latest save`);
+  console.log(`  GET    /api/saves/list              - List all saves`);
+  console.log(`  GET    /api/saves/:saveId           - Download specific save`);
+  console.log(`  POST   /api/saves/:saveId/restore   - Restore from save`);
+  console.log('');
+  console.log('Admin Endpoints (192.168.1.X only):');
+  console.log(`  GET    /api/admin/users             - List all users`);
+  console.log(`  GET    /api/admin/users/:userId     - Get user details`);
+  console.log(`  POST   /api/admin/users/:userId/ban - Ban user`);
+  console.log(`  POST   /api/admin/users/:userId/unban - Unban user`);
+  console.log(`  POST   /api/admin/users/:userId/reset-progress - Reset player progress`);
+  console.log(`  POST   /api/admin/users/:userId/nerf - Nerf player stats`);
+  console.log(`  POST   /api/admin/ips/block         - Block IP address`);
+  console.log(`  GET    /api/admin/ips/blocked       - List blocked IPs`);
+  console.log(`  POST   /api/admin/ips/:ip/unblock   - Unblock IP`);
+  console.log(`  GET    /api/admin/actions           - Audit log`);
+  console.log(`  GET    /api/admin/stats             - Server statistics`);
   console.log('');
   console.log('Press Ctrl+C to stop the server');
   console.log('');
 });
 
 export default app;
+
