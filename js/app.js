@@ -1,20 +1,21 @@
 import { initGame, getGame } from './main.js';
 import { UI } from './ui/main.js';
 import { ACTIVITIES, BACKGROUND_HACK_SKILLS } from './data/skillData.js';
-import { NetrunnerClient } from './netrunnerClient.js';
-import { MultiplayerManager } from './multiplayer.js';
+// MULTIPLAYER DISABLED (Phase 2)
+// import { NetrunnerClient } from './netrunnerClient.js';
+// import { MultiplayerManager } from './multiplayer.js';
 
 let ui;
 let currentModal = null;
 
-// Initialize multiplayer client
-const gameClient = new NetrunnerClient({
-  apiUrl: 'http://localhost:3001',
-  socketUrl: 'ws://localhost:3001'
-});
+// Initialize multiplayer client (DISABLED - Phase 2)
+// const gameClient = new NetrunnerClient({
+//   apiUrl: 'http://localhost:3001',
+//   socketUrl: 'ws://localhost:3001'
+// });
 
 // Make available globally
-window.gameClient = gameClient;
+// window.gameClient = gameClient;
 
 // ==========================================
 // Modal Dialog System
@@ -431,13 +432,13 @@ window.addEventListener('load', () => {
   ui = new UI();
   ui.init();
   
-  // Wire game client to game instance
-  game.gameClient = gameClient;
+  // Wire game client to game instance (DISABLED - Phase 2)
+  // game.gameClient = gameClient;
   window.gameInstance = game;
   
-  // Initialize multiplayer manager
-  const multiplayerManager = new MultiplayerManager(gameClient, game);
-  window.multiplayerManager = multiplayerManager;
+  // Initialize multiplayer manager (DISABLED - Phase 2)
+  // const multiplayerManager = new MultiplayerManager(gameClient, game);
+  // window.multiplayerManager = multiplayerManager;
 });
 
 // ==========================================

@@ -247,6 +247,112 @@ NETRUNNER is a complete, feature-rich idle game inspired by Melvor Idle with a c
 
 ---
 
+## Recent Updates (v0.6.1)
+
+### Parallel Hacking Penalty Feature
+**Date:** April 10, 2026
+**Status:** ✅ IMPLEMENTED & TESTED
+
+#### What Changed
+Added a visible 25% XP penalty when players start primary activities while a background hack is running in parallel.
+
+#### Implementation Details
+- **Warning Modal**: Orange-themed modal appears before starting activities (except combat) when parallel hacking is active
+- **Penalty Application**: All rewards (XP, currency, items) reduced to 75% when activity completes
+- **UI Indicators**: Orange warning text on skill cards shows "(75% XP - Parallel Hack Active)"
+- **Combat Exemption**: Combat activities bypass the warning and start immediately without penalty
+- **Click Delegation**: Added proper close button handler for modal dismissal
+
+#### Files Modified
+1. `js/app.js` — Added warning modal function and click handlers
+2. `js/systems/skills.js` — Implemented penalty multiplier logic
+3. `js/ui/main.js` — Added visual indicators and warning display
+4. `css/main.css` — Added styling for penalty indicators and modal close button
+
+#### Verification Checklist
+- [x] Warning modal displays correctly
+- [x] Modal shows background hack skill name
+- [x] 75% penalty applied to XP
+- [x] 75% penalty applied to currency rewards
+- [x] 75% penalty applied to item drops
+- [x] Combat activities bypass warning
+- [x] UI indicators show penalty status
+- [x] Modal can be closed via X button
+- [x] Modal can be cancelled
+- [x] All syntax valid
+- [x] CSS styling matches theme
+- [x] Git commit created
+
+---
+
+## Multiplayer Status (Phase 2 - Coming Soon)
+
+**Current Status:** ⏸️ DISABLED
+
+The multiplayer system (PvP Duels, Guilds, Events, Leaderboards) has been **disabled from the UI** to maintain a clean, working core game experience.
+
+### Why Disabled?
+
+**Investigation Results:**
+- ✓ Backend REST API: Fully functional (all endpoints working)
+- ✗ WebSocket (Real-time): NOT implemented in test backend
+- ✗ UI Rendering: No implementation for multiplayer views
+- ✗ Error Handling: No graceful degradation on connection failure
+
+**Issues Found:**
+1. NetrunnerClient tries to load Socket.io from backend (returns 404)
+2. Test server only provides REST endpoints, no WebSocket support
+3. All real-time features broken (live duels, guild wars, presence)
+4. UI buttons exist but views don't render
+
+### What Was Done
+
+1. **Disabled Multiplayer Navigation** - Commented out nav buttons in index.html
+2. **Disabled Multiplayer Views** - Commented out PvP, Guilds, Events, Leaderboards views
+3. **Disabled Backend Client** - Commented out NetrunnerClient initialization in app.js
+4. **Disabled Multiplayer Manager** - Commented out MultiplayerManager initialization
+
+### Phase 2 Implementation Plan
+
+To re-enable multiplayer:
+
+1. **Add Socket.io to Backend**
+   - Install socket.io in backend
+   - Create WebSocket server on port 3001
+   - Implement event broadcasting
+
+2. **Implement Real-time Features**
+   - Duel event broadcasting
+   - Guild war notifications
+   - Player presence tracking
+   - Live leaderboard updates
+
+3. **Create UI Rendering**
+   - PvP opponent selector
+   - Live duel UI with rounds
+   - Guild management interface
+   - Real-time leaderboards
+
+4. **Add Error Handling**
+   - Graceful degradation if offline
+   - Reconnection logic
+   - User-friendly error messages
+
+**Estimated Effort:** 4-6 hours
+
+### Backend API (Still Running)
+
+The backend REST API continues to run on `localhost:3001` and all endpoints are functional for future use:
+- ✓ `/api/players/leaderboard`
+- ✓ `/api/guilds`
+- ✓ `/api/events`
+- ✓ `/api/duels`
+- ✓ `/api/challenges`
+- ✓ `/api/leaderboard/pvp`
+- ✓ `/api/leaderboard/elo`
+
+---
+
 *Built with vanilla JavaScript, CSS, and HTML*
 *Zero dependencies, 100% web-based*
 *Ready for immediate play*
