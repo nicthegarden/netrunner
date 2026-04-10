@@ -28,6 +28,9 @@ export class GameLoop {
       this.tickCount++;
       this.game.skillManager.tick();
       this.game.combat.tick();
+      if (this.game.livingWorld) {
+        this.game.livingWorld.tick();
+      }
       events.emit(EVENTS.GAME_TICK, { tick: this.tickCount });
     } catch (e) {
       console.error('Game tick error:', e);

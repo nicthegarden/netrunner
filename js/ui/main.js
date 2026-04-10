@@ -1,6 +1,7 @@
 import { events, EVENTS } from '../engine/events.js';
 import { getGame } from '../main.js';
 import { SHOP_ITEMS, ITEMS, SKILLS, SKILL_ABILITIES, PASSIVE_BONUSES, ACTIVITIES, BACKGROUND_HACK_SKILLS, BACKGROUND_HACK_EFFICIENCY } from '../data/skillData.js';
+import { FACTIONS } from '../data/worldData.js';
 import { CRAFT_RECIPES } from '../systems/crafting.js';
 import { PRESTIGE_UPGRADES } from '../systems/prestige.js';
 import { HackerTerminal } from './hackerTerminal.js';
@@ -1075,6 +1076,161 @@ export class UI {
   }
 
   // ==========================================
+  // Living World - Contracts & Leaderboards
+  // ==========================================
+  renderLivingWorldView() {
+    const container = document.getElementById('living-world-container');
+    if (!container) {
+      // Create container if it doesn't exist
+      container = document.createElement('div');
+      container.id = 'living-world-container';
+      document.querySelector('.main-content').appendChild(container);
+    }
+
+    const game = getGame();
+    const world = game.livingWorld;
+    const playerLevel = game.skillManager.getSkill('intrusion')?.level || 1;
+
+    let html = '<div class="living-world-section">';
+
+    // === ACTIVE EVENTS ===
+    const activeEvents = world.getActiveEvents();
+    html += '<div class="living-world-panel">';
+    html += '<div class="panel-title">🌍 World Events</div>';
+    if (activeEvents.length > 0) {
+      html += '<div class="events-list">';
+      activeEvents.forEach(evt => {
+        const bonus = Math.round((evt.bonusMultiplier - 1) * 100);
+        html += `<div class="event-item">
+          <span class="event-icon">${evt.icon}</span>
+          <div class="event-info">
+            <div class="event-name">${evt.name}</div>
+            <div class="event-desc">${evt.description}</div>
+            <div class="event-bonus">+${bonus}% bonus</div>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="no-events">No active events. Check back later!</div>';
+    }
+    html += '</div>';
+
+    // === ACTIVE CONTRACTS ===
+    const contracts = world.getAvailableContracts();
+    html += '<div class="living-world-panel">';
+    html += '<div class="panel-title">📋 Available Contracts</div>';
+    if (contracts.length > 0) {
+      html += '<div class="contracts-list">';
+      contracts.forEach(contract => {
+        const difficulty = { easy: '🟢', medium: '🟡', hard: '🔴', very_hard: '💀' }[contract.difficulty] || '❓';
+        html += `<div class="contract-item">
+          <div class="contract-header">
+            <span class="contract-icon">${contract.icon}</span>
+            <span class="contract-name">${contract.name}</span>
+            <span class="contract-difficulty">${difficulty}</span>
+          </div>
+          <div class="contract-desc">${contract.description}</div>
+          <div class="contract-reward">💰 ${contract.baseReward} E$ | Level ${contract.minLevel}+</div>
+          <button class="btn btn-small" data-action="accept-contract" data-contract-id="${contract.id}">Accept</button>
+        </div>`;
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="no-contracts">Contracts will refresh soon. Check back later!</div>';
+    }
+    html += '</div>';
+
+    // === FACTION REPUTATION ===
+    html += '<div class="living-world-panel">';
+    html += '<div class="panel-title">👥 Faction Reputation</div>';
+    html += '<div class="factions-list">';
+     Object.entries(world.worldState.factionReputation).forEach(([factionId, rep]) => {
+      const faction = FACTIONS[factionId] || {};
+      const repLabel = rep > 50 ? '⭐ Ally' : rep > 0 ? '👍 Friendly' : rep < -50 ? '⛔ Enemy' : rep < 0 ? '👎 Hostile' : '😐 Neutral';
+      const barWidth = Math.max(0, Math.min(100, 50 + rep));
+      html += `<div class="faction-item">
+        <div class="faction-name">${faction.name || factionId}</div>
+        <div class="faction-rep-bar">
+          <div class="faction-rep-fill" style="width: ${barWidth}%; background: ${faction.color || '#00ff41'};"></div>
+        </div>
+        <div class="faction-rep-label">${repLabel} (${rep})</div>
+      </div>`;
+    });
+    html += '</div>';
+    html += '</div>';
+
+    // === PVP HACKING TARGETS ===
+    const targets = world.getPvPTargets();
+    html += '<div class="living-world-panel">';
+    html += '<div class="panel-title">💻 Rival Netrunners</div>';
+    if (targets.length > 0) {
+      html += '<div class="targets-list">';
+      targets.forEach((target, idx) => {
+        const difficulty = target.level > playerLevel ? '🔴' : target.level < playerLevel - 10 ? '🟢' : '🟡';
+        const successChance = Math.max(10, Math.min(95, 50 + (playerLevel - target.level) * 2));
+        html += `<div class="target-item">
+          <div class="target-header">
+            <span class="target-icon">💻</span>
+            <span class="target-name">${target.name}</span>
+            <span class="target-level">Lv${target.level} ${difficulty}</span>
+          </div>
+          <div class="target-details">
+            <span class="target-faction">${target.faction}</span>
+            <span class="target-loot">💰 ~${target.lootValue} E$</span>
+          </div>
+          <div class="target-chance">Success chance: ${successChance}%</div>
+          <button class="btn btn-small" data-action="hack-target" data-target-id="${target.id}">Hack</button>
+        </div>`;
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="no-targets">No rivals available...</div>';
+    }
+    html += '</div>';
+
+    // === LEADERBOARDS ===
+    html += '<div class="living-world-panel">';
+    html += '<div class="panel-title">🏆 Leaderboards</div>';
+    html += '<div class="leaderboards-tabs">';
+    
+    // Show top 3 players for current skill
+    const currentSkill = this.currentSkill || 'intrusion';
+    const lb = world.getLeaderboard(currentSkill);
+    const playerRank = world.getPlayerRank(currentSkill, game.player.name || 'You');
+    
+    html += '<div class="leaderboard">';
+    html += `<div class="leaderboard-title">${currentSkill.replace(/_/g, ' ').toUpperCase()}</div>`;
+    if (lb.length > 0) {
+      html += '<div class="leaderboard-list">';
+      lb.slice(0, 10).forEach((entry, idx) => {
+        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+        const isPlayer = entry.name === (game.player.name || 'You');
+        const highlight = isPlayer ? ' highlight' : '';
+        html += `<div class="leaderboard-entry${highlight}">
+          <span class="leaderboard-rank">${medal}</span>
+          <span class="leaderboard-name">${entry.name}</span>
+          <span class="leaderboard-level">Lv${entry.level}</span>
+          <span class="leaderboard-xp">${Math.floor(entry.xp).toLocaleString()} XP</span>
+        </div>`;
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="no-leaderboard">No leaderboard data yet.</div>';
+    }
+    if (playerRank) {
+      html += `<div class="player-rank">Your rank: #${playerRank}</div>`;
+    }
+    html += '</div>';
+    
+    html += '</div>';
+    html += '</div>'; // End living-world-panel
+    html += '</div>'; // End living-world-section
+
+    container.innerHTML = html;
+  }
+
+  // ==========================================
   // Navigation
   // ==========================================
   navigate(view, category = null) {
@@ -1103,9 +1259,9 @@ export class UI {
       this.renderPassivesView();
     } else if (view === 'changelog') {
       this.renderChangelogView();
+    } else if (view === 'world') {
+      this.renderLivingWorldView();
     }
-    // Multiplayer views are handled by MultiplayerManager
-    // No rendering needed here as multiplayer uses dynamic content
   }
 
   // ==========================================

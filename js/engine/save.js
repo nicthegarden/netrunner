@@ -83,6 +83,7 @@ export class SaveManager {
         achievements: this.game.achievements.serialize(),
         prestige: this.game.prestige ? this.game.prestige.serialize() : { level: 0, totalResets: 0, points: 0, bonuses: {} },
         abilities: this.game.abilityManager ? this.game.abilityManager.serialize() : { selections: {} },
+        livingWorld: this.game.livingWorld ? this.game.livingWorld.serialize() : { worldState: {}, leaderboards: {} },
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
       events.emit(EVENTS.GAME_SAVED, { timestamp: saveData.timestamp });

@@ -52,4 +52,13 @@ export const EVENTS = {
   UI_NOTIFICATION: 'ui:notification',
   UI_UPDATE: 'ui:update',
   ABILITY_ACTIVATED: 'ability:activated',
+  
+  // Living World Events
+  CONTRACTS_REFRESHED: 'world:contractsRefreshed',
+  CONTRACT_ACCEPTED: 'world:contractAccepted',
+  CONTRACT_COMPLETED: 'world:contractCompleted',
+  PVP_HACK_SUCCESS: 'world:pvpHackSuccess',
+  PVP_HACK_FAILED: 'world:pvpHackFailed',
+  FACTION_REPUTATION_CHANGED: 'world:factionReputationChanged',
+  WORLD_EVENTS_UPDATED: 'world:eventsUpdated',
 };

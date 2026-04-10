@@ -652,6 +652,41 @@ document.addEventListener('click', (e) => {
     return;
   }
 
+  // Accept contract
+  const acceptContract = match('[data-action="accept-contract"]');
+  if (acceptContract) {
+    const contractId = acceptContract.getAttribute('data-contract-id');
+    if (contractId && game.livingWorld) {
+      game.livingWorld.acceptContract(contractId);
+      ui.renderLivingWorldView();
+    }
+    return;
+  }
+
+  // Hack PvP target
+  const hackTarget = match('[data-action="hack-target"]');
+  if (hackTarget) {
+    const targetId = hackTarget.getAttribute('data-target-id');
+    const intrusion = game.skillManager.getSkill('intrusion');
+    if (targetId && intrusion && game.livingWorld) {
+      const result = game.livingWorld.attemptHack(targetId, intrusion.level, intrusion.level);
+      if (result) {
+        // Distribute loot if successful
+        if (result.success && result.lootPool && result.lootPool.items) {
+          Object.entries(result.lootPool.items).forEach(([itemId, spec]) => {
+            const qty = spec.min + Math.floor(Math.random() * (spec.max - spec.min + 1));
+            if (qty > 0) {
+              game.inventory.addItem(itemId, qty);
+            }
+          });
+        }
+        // Refresh view to show updated targets
+        ui.renderLivingWorldView();
+      }
+    }
+    return;
+  }
+
   // Close modal (used by parallel hack warning modal)
   const closeBtn = match('[data-action="close-modal"]');
   if (closeBtn) {

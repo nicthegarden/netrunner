@@ -12,6 +12,7 @@ import { Crafter } from './systems/crafting.js';
 import { Prestige } from './systems/prestige.js';
 import { PassiveStats } from './systems/passiveStats.js';
 import { AbilityManager } from './systems/abilities.js';
+import { LivingWorld } from './systems/livingWorld.js';
 import { ACTIVITIES, ENEMIES } from './data/skillData.js';
 
 export class Game {
@@ -36,6 +37,7 @@ export class Game {
     this.economy.passiveStats = this.passiveStats; // Wire passive stats to Economy (currency bonus)
     this.combat.passiveStats = this.passiveStats; // Wire passive stats to Combat
     this.combat.abilityManager = this.abilityManager; // Wire abilities to Combat
+    this.livingWorld = new LivingWorld(); // Living world system (contracts, PvP, events, leaderboards)
     this.gameLoop = new GameLoop(this);
     this.saveManager = new SaveManager(this);
     this.offlineProgress = new OfflineProgress(this);
@@ -214,6 +216,74 @@ export class Game {
         if (items && items.length >= 10) this.achievements.unlock('collector');
       })
     );
+
+    // Wire contract rewards
+    this._eventUnsubs.push(
+      events.on(EVENTS.CONTRACT_COMPLETED, (data) => {
+        if (data.reward > 0) {
+          this.economy.addCurrency(data.reward);
+        }
+        // Distribute loot from contract
+        if (data.lootPool && data.lootPool.items) {
+          Object.entries(data.lootPool.items).forEach(([itemId, spec]) => {
+            const qty = spec.min + Math.floor(Math.random() * (spec.max - spec.min + 1));
+            if (qty > 0) {
+              this.inventory.addItem(itemId, qty);
+            }
+          });
+        }
+        events.emit(EVENTS.UI_NOTIFICATION, {
+          message: `✓ Contract completed: "${data.contract.name}"`,
+          type: 'success',
+        });
+      })
+    );
+
+    // Wire PvP hack rewards
+    this._eventUnsubs.push(
+      events.on(EVENTS.PVP_HACK_SUCCESS, (data) => {
+        if (data.reward > 0) {
+          this.economy.addCurrency(data.reward);
+        }
+        // Distribute loot from hack
+        if (data.lootPool && data.lootPool.items) {
+          Object.entries(data.lootPool.items).forEach(([itemId, spec]) => {
+            const qty = spec.min + Math.floor(Math.random() * (spec.max - spec.min + 1));
+            if (qty > 0) {
+              this.inventory.addItem(itemId, qty);
+            }
+          });
+        }
+        events.emit(EVENTS.UI_NOTIFICATION, {
+          message: `✓ Successfully hacked ${data.target.name} (${data.target.faction})!`,
+          type: 'success',
+        });
+      })
+    );
+
+    // PvP hack failure message
+    this._eventUnsubs.push(
+      events.on(EVENTS.PVP_HACK_FAILED, (data) => {
+        events.emit(EVENTS.UI_NOTIFICATION, {
+          message: `✗ Failed to hack ${data.target.name}. Success chance was ${Math.floor(data.successChance * 100)}%.`,
+          type: 'warning',
+        });
+      })
+    );
+
+    // Update leaderboards on skill level up
+    this._eventUnsubs.push(
+      events.on(EVENTS.SKILL_LEVEL_UP, (data) => {
+        if (this.livingWorld && this.player.name) {
+          this.livingWorld.updateLeaderboard(
+            data.skill,
+            this.player.name,
+            data.newLevel,
+            data.currentXP
+          );
+        }
+      })
+    );
   }
 
   _checkSkillAchievements(data) {
@@ -244,6 +314,7 @@ export class Game {
     if (saveData.achievements) this.achievements.deserialize(saveData.achievements);
     if (saveData.prestige) this.prestige.deserialize(saveData.prestige);
     if (saveData.abilities) this.abilityManager.deserialize(saveData.abilities);
+    if (saveData.livingWorld) this.livingWorld.deserialize(saveData.livingWorld);
   }
 
   resetGame() {

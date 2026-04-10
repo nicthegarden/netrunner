@@ -2433,3 +2433,383 @@ body::before {
     min-width: 80px;
   }
 }
+
+/* ============================================ */
+/* Living World Styles */
+/* ============================================ */
+
+.living-world-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.living-world-panel {
+  background: rgba(0, 255, 65, 0.04);
+  border: 1px solid #00ff4133;
+  border-radius: 4px;
+  padding: 15px;
+  transition: all 0.2s ease;
+}
+
+.living-world-panel:hover {
+  background: rgba(0, 255, 65, 0.08);
+  border-color: #00ff41;
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+}
+
+.panel-title {
+  color: #00ff41;
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #00ff4133;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Events List */
+.events-list,
+.contracts-list,
+.factions-list,
+.targets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.event-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px;
+  background: rgba(255, 255, 0, 0.04);
+  border-left: 3px solid #ffff00;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.event-item:hover {
+  background: rgba(255, 255, 0, 0.08);
+  border-left-color: #ffff00;
+}
+
+.event-icon {
+  font-size: 20px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.event-info {
+  flex: 1;
+}
+
+.event-name {
+  color: #ffff00;
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.event-desc {
+  color: #aaa;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.event-bonus {
+  color: #00ff41;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+/* Contracts */
+.contract-item {
+  padding: 12px;
+  background: rgba(0, 212, 255, 0.05);
+  border: 1px solid #00d4ff33;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.contract-item:hover {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+.contract-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.contract-icon {
+  font-size: 18px;
+}
+
+.contract-name {
+  color: #00d4ff;
+  font-weight: bold;
+  font-size: 13px;
+  flex: 1;
+}
+
+.contract-difficulty {
+  font-size: 16px;
+}
+
+.contract-desc {
+  color: #aaa;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.contract-reward {
+  color: #ffff00;
+  font-size: 11px;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+/* Factions */
+.faction-item {
+  padding: 10px;
+  background: rgba(255, 0, 255, 0.03);
+  border: 1px solid #ff00ff22;
+  border-radius: 3px;
+  margin-bottom: 10px;
+}
+
+.faction-name {
+  color: #ff00ff;
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.faction-rep-bar {
+  width: 100%;
+  height: 12px;
+  background: #0a0e2766;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+  border: 1px solid #ff00ff22;
+}
+
+.faction-rep-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+  box-shadow: inset 0 0 5px rgba(255, 0, 255, 0.3);
+}
+
+.faction-rep-label {
+  color: #aaa;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* PvP Targets */
+.target-item {
+  padding: 12px;
+  background: rgba(255, 100, 0, 0.05);
+  border: 1px solid #ff640033;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.target-item:hover {
+  background: rgba(255, 100, 0, 0.1);
+  border-color: #ff6400;
+  box-shadow: 0 0 10px rgba(255, 100, 0, 0.2);
+}
+
+.target-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.target-icon {
+  font-size: 16px;
+}
+
+.target-name {
+  color: #ff6400;
+  font-weight: bold;
+  font-size: 13px;
+  flex: 1;
+}
+
+.target-level {
+  color: #aaa;
+  font-size: 11px;
+}
+
+.target-details {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: #aaa;
+}
+
+.target-loot {
+  color: #ffff00;
+}
+
+.target-chance {
+  color: #00ff41;
+  font-size: 11px;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+/* Leaderboards */
+.leaderboards-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.leaderboard {
+  background: rgba(0, 212, 255, 0.04);
+  border: 1px solid #00d4ff33;
+  border-radius: 3px;
+  padding: 12px;
+}
+
+.leaderboard-title {
+  color: #00d4ff;
+  font-weight: bold;
+  font-size: 12px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.leaderboard-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: rgba(0, 212, 255, 0.02);
+  border-radius: 2px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.leaderboard-entry:hover {
+  background: rgba(0, 212, 255, 0.08);
+}
+
+.leaderboard-entry.highlight {
+  background: rgba(255, 255, 0, 0.1);
+  border: 1px solid #ffff00;
+}
+
+.leaderboard-rank {
+  min-width: 20px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.leaderboard-name {
+  color: #fff;
+  flex: 1;
+}
+
+.leaderboard-level {
+  color: #00ff41;
+  font-weight: bold;
+  min-width: 40px;
+  text-align: right;
+}
+
+.leaderboard-xp {
+  color: #aaa;
+  font-size: 11px;
+  text-align: right;
+  min-width: 80px;
+}
+
+.player-rank {
+  color: #ffff00;
+  font-weight: bold;
+  font-size: 12px;
+  margin-top: 10px;
+  padding: 8px;
+  background: rgba(255, 255, 0, 0.1);
+  border-left: 2px solid #ffff00;
+}
+
+/* Empty states */
+.no-events,
+.no-contracts,
+.no-targets,
+.no-leaderboard {
+  color: #666;
+  font-size: 12px;
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
+/* Buttons in living world */
+.living-world-panel .btn-small {
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .living-world-section {
+    gap: 15px;
+  }
+
+  .living-world-panel {
+    padding: 12px;
+  }
+
+  .panel-title {
+    font-size: 12px;
+  }
+
+  .leaderboard-entry {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .leaderboard-xp {
+    min-width: auto;
+    width: 100%;
+    text-align: left;
+    margin-left: 20px;
+  }
+}
