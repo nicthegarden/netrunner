@@ -942,6 +942,20 @@ export class UI {
 
     const changelog = [
       {
+        version: '0.8.1',
+        date: 'April 10, 2026',
+        title: 'The Admin Enhancements Update',
+        entries: [
+          { type: 'feature', text: 'Admin Account Creation — Administrators can now create new user accounts directly through the admin panel without requiring email verification.' },
+          { type: 'feature', text: 'Rate Limiting on Auth Endpoints — Login attempts limited to 5 per 15 minutes per IP. Registration limited to 10 per hour per IP. Token refresh limited to 30 per hour per IP.' },
+          { type: 'feature', text: 'Admin Dashboard UI — Full web interface at /admin.html for user management, IP blocking, audit logs, and account creation. Accessible only from 192.168.1.X.' },
+          { type: 'security', text: 'Brute-Force Protection — Rate limiting prevents automated account takeover attempts on login and registration endpoints.' },
+          { type: 'security', text: 'Admin-Only Account Creation — Only admin users with valid IP can create new accounts via /api/admin/users/create endpoint.' },
+          { type: 'balance', text: 'Enhanced Admin Actions — Account creation now logged to audit trail with admin name and timestamp.' },
+          { type: 'backend', text: 'express-rate-limit middleware integrated for all auth endpoints.' },
+        ],
+      },
+      {
         version: '0.8.0',
         date: 'April 10, 2026',
         title: 'The Authentication & Admin Panel Update',

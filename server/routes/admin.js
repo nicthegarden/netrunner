@@ -447,4 +447,83 @@ router.get('/admin/stats', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/users/create
+ * Create a new user account (admin-only)
+ * Body: { username, password, email?, isAdmin? }
+ */
+router.post('/admin/users/create', async (req, res) => {
+  try {
+    const { username, password, email, isAdmin } = req.body;
+
+    // Validation
+    if (!username || typeof username !== 'string') {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    if (username.length < 3 || username.length > 32) {
+      return res.status(400).json({ error: 'Username must be 3-32 characters' });
+    }
+
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ error: 'Password is required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    // Check if username already exists
+    const existing = await db.get(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (existing) {
+      return res.status(409).json({ error: 'Username already taken' });
+    }
+
+    // Hash password
+    const passwordHash = hashPassword(password);
+
+    // Create user
+    const result = await db.run(
+      `INSERT INTO users (username, password_hash, email, is_admin, created_at) 
+       VALUES (?, ?, ?, ?, datetime('now'))`,
+      [username, passwordHash, email || null, isAdmin ? 1 : 0]
+    );
+
+    const userId = result.lastID;
+
+    // Create player profile
+    await db.run(
+      `INSERT INTO player_profiles (user_id) 
+       VALUES (?)`,
+      [userId]
+    );
+
+    // Log admin action
+    await db.run(
+      `INSERT INTO admin_actions (admin_id, target_user_id, action_type, description)
+       VALUES (?, ?, ?, ?)`,
+      [req.user.id, userId, 'account_create', `Created new account: ${username}${isAdmin ? ' (ADMIN)' : ''}`]
+    );
+
+    res.status(201).json({
+      status: 'success',
+      message: `Account created successfully${isAdmin ? ' with admin privileges' : ''}`,
+      user: {
+        id: userId,
+        username,
+        email: email || null,
+        isAdmin: isAdmin ? true : false
+      }
+    });
+
+  } catch (err) {
+    console.error('Create user error:', err);
+    res.status(500).json({ error: 'Failed to create account' });
+  }
+});
+
 export default router;

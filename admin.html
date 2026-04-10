@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NETRUNNER — Admin Panel</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    /* Admin Panel Styles */
+    body {
+      background: #0a0e27;
+      color: #00ff41;
+      font-family: 'Courier New', monospace;
+    }
+
+    #admin-container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .admin-sidebar {
+      width: 200px;
+      background: #0f1419;
+      border-right: 2px solid #00ff41;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .admin-sidebar h2 {
+      color: #00ff41;
+      font-size: 16px;
+      margin-top: 0;
+      text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+      border-bottom: 1px solid #00ff41;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    .admin-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .admin-nav-btn {
+      padding: 8px 12px;
+      background: transparent;
+      border: 1px solid #00ff41;
+      color: #00ff41;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      transition: all 0.3s;
+      text-align: left;
+    }
+
+    .admin-nav-btn:hover {
+      background: #00ff4111;
+      box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+    }
+
+    .admin-nav-btn.active {
+      background: #00ff41;
+      color: #0a0e27;
+      font-weight: bold;
+    }
+
+    .admin-logout {
+      margin-top: auto;
+      padding: 10px 12px;
+      background: #ff1744;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+      text-transform: uppercase;
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+
+    .admin-logout:hover {
+      background: #ff5252;
+    }
+
+    .admin-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .admin-header {
+      background: #0f1419;
+      border-bottom: 2px solid #00ff41;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .admin-header h1 {
+      color: #00ff41;
+      font-size: 20px;
+      margin: 0;
+      text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    }
+
+    .admin-user-info {
+      color: #00d4ff;
+      font-size: 12px;
+    }
+
+    .admin-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .admin-view {
+      display: none;
+    }
+
+    .admin-view.active {
+      display: block;
+    }
+
+    .admin-section {
+      background: #0f1419;
+      border: 1px solid #00ff41;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+
+    .admin-section h3 {
+      color: #00ff41;
+      margin-top: 0;
+      border-bottom: 1px solid #00ff4144;
+      padding-bottom: 10px;
+      font-size: 14px;
+    }
+
+    /* Users View */
+    .user-search {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .user-search input {
+      flex: 1;
+      padding: 8px;
+      background: #1a1f3a;
+      border: 1px solid #00ff41;
+      color: #00ff41;
+      font-family: 'Courier New', monospace;
+    }
+
+    .user-search button {
+      padding: 8px 16px;
+      background: #00ff41;
+      border: none;
+      color: #0a0e27;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+      border-radius: 2px;
+    }
+
+    .user-list {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #00ff4144;
+    }
+
+    .user-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #00ff4111;
+      font-size: 12px;
+    }
+
+    .user-row:hover {
+      background: #00ff4111;
+      cursor: pointer;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-id {
+      color: #00d4ff;
+      font-weight: bold;
+    }
+
+    .user-username {
+      color: #00ff41;
+    }
+
+    .user-created {
+      color: #00ff4177;
+      font-size: 10px;
+    }
+
+    .user-status {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .status-badge {
+      padding: 2px 6px;
+      border-radius: 2px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    .status-banned {
+      background: #ff1744;
+      color: white;
+    }
+
+    .status-admin {
+      background: #00d4ff;
+      color: #0a0e27;
+    }
+
+    /* User Detail */
+    .user-detail {
+      background: #0f1419;
+      border: 1px solid #00ff41;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #00ff4144;
+    }
+
+    .detail-header h2 {
+      color: #00ff41;
+      margin: 0;
+    }
+
+    .detail-close {
+      background: transparent;
+      border: 1px solid #00ff41;
+      color: #00ff41;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .detail-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-item {
+      background: #1a1f3a;
+      padding: 10px;
+      border-left: 3px solid #00ff41;
+    }
+
+    .stat-label {
+      color: #00ff4177;
+      font-size: 10px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      color: #00ff41;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .detail-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #00ff4144;
+    }
+
+    .btn-action {
+      padding: 8px 16px;
+      border: 1px solid #00ff41;
+      background: transparent;
+      color: #00ff41;
+      cursor: pointer;
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+
+    .btn-action:hover {
+      background: #00ff4111;
+    }
+
+    .btn-action.danger {
+      border-color: #ff1744;
+      color: #ff1744;
+    }
+
+    .btn-action.danger:hover {
+      background: #ff174411;
+    }
+
+    .btn-action.success {
+      border-color: #00d4ff;
+      color: #00d4ff;
+    }
+
+    .btn-action.success:hover {
+      background: #00d4ff11;
+    }
+
+    /* Create Account */
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      color: #00ff41;
+      font-size: 12px;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 8px;
+      background: #1a1f3a;
+      border: 1px solid #00ff41;
+      color: #00ff41;
+      font-family: 'Courier New', monospace;
+      box-sizing: border-box;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #00d4ff;
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    }
+
+    .form-group textarea {
+      width: 100%;
+      padding: 8px;
+      background: #1a1f3a;
+      border: 1px solid #00ff41;
+      color: #00ff41;
+      font-family: 'Courier New', monospace;
+      box-sizing: border-box;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      accent-color: #00ff41;
+      cursor: pointer;
+    }
+
+    .checkbox-group label {
+      margin: 0;
+      color: #00ff41;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .form-message {
+      padding: 10px;
+      border-radius: 2px;
+      font-size: 12px;
+      margin-bottom: 15px;
+    }
+
+    .form-message.error {
+      background: #ff174422;
+      color: #ff1744;
+      border-left: 3px solid #ff1744;
+    }
+
+    .form-message.success {
+      background: #00ff4122;
+      color: #00ff41;
+      border-left: 3px solid #00ff41;
+    }
+
+    /* IP Blocking */
+    .ip-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .ip-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #00ff4111;
+      font-size: 12px;
+    }
+
+    .ip-address {
+      color: #00ff41;
+      font-weight: bold;
+      font-family: monospace;
+    }
+
+    .ip-reason {
+      color: #00ff4177;
+      flex: 1;
+      margin-left: 20px;
+    }
+
+    .ip-expires {
+      color: #00d4ff;
+      font-size: 10px;
+    }
+
+    /* Audit Log */
+    .audit-list {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .audit-entry {
+      padding: 10px;
+      border-bottom: 1px solid #00ff4111;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .audit-time {
+      color: #00d4ff;
+      font-weight: bold;
+    }
+
+    .audit-action {
+      color: #00ff41;
+    }
+
+    .audit-details {
+      color: #00ff4177;
+      margin-top: 5px;
+    }
+
+    /* Server Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: #1a1f3a;
+      padding: 20px;
+      border: 1px solid #00ff4144;
+      border-radius: 4px;
+      text-align: center;
+    }
+
+    .stat-card-label {
+      color: #00ff4177;
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .stat-card-value {
+      color: #00ff41;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .loading {
+      color: #00d4ff;
+      font-style: italic;
+    }
+
+    .error {
+      color: #ff1744;
+      padding: 10px;
+      background: #ff174422;
+      border: 1px solid #ff1744;
+      border-radius: 2px;
+      margin-bottom: 15px;
+    }
+
+    @media (max-width: 768px) {
+      #admin-container {
+        flex-direction: column;
+      }
+
+      .admin-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 2px solid #00ff41;
+        height: 60px;
+        padding: 10px;
+        display: flex;
+        gap: 10px;
+      }
+
+      .admin-sidebar h2 {
+        display: none;
+      }
+
+      .admin-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .admin-nav-btn {
+        flex: 0 0 auto;
+      }
+
+      .admin-logout {
+        margin-top: 0;
+      }
+
+      .detail-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="admin-container">
+    <!-- Sidebar Navigation -->
+    <div class="admin-sidebar">
+      <h2>ADMIN</h2>
+      <div class="admin-nav">
+        <button class="admin-nav-btn active" onclick="switchView('dashboard')">📊 Dashboard</button>
+        <button class="admin-nav-btn" onclick="switchView('users')">👥 Users</button>
+        <button class="admin-nav-btn" onclick="switchView('create-account')">➕ Create Account</button>
+        <button class="admin-nav-btn" onclick="switchView('ips')">🔒 Block IPs</button>
+        <button class="admin-nav-btn" onclick="switchView('audit')">📋 Audit Log</button>
+      </div>
+      <button class="admin-logout" onclick="handleAdminLogout()">Logout</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="admin-main">
+      <div class="admin-header">
+        <h1>⚡ NETRUNNER ADMIN PANEL</h1>
+        <div class="admin-user-info">
+          IP: <span id="admin-ip">127.0.0.1</span> | <span id="admin-time">--:--:--</span>
+        </div>
+      </div>
+
+      <div class="admin-content">
+        <!-- Dashboard View -->
+        <div id="dashboard" class="admin-view active">
+          <div class="admin-section">
+            <h3>Server Statistics</h3>
+            <div id="stats-container" class="loading">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Users View -->
+        <div id="users" class="admin-view">
+          <div class="admin-section">
+            <h3>User Management</h3>
+            <div class="user-search">
+              <input 
+                type="text" 
+                id="user-search" 
+                placeholder="Search username or ID..."
+                onkeyup="searchUsers()"
+              />
+              <button onclick="loadUsers()">🔄 Refresh</button>
+            </div>
+            <div id="users-container" class="user-list loading">Loading users...</div>
+            <div id="user-detail" style="margin-top: 20px;"></div>
+          </div>
+        </div>
+
+        <!-- Create Account View -->
+        <div id="create-account" class="admin-view">
+          <div class="admin-section">
+            <h3>Create New Account</h3>
+            <div id="create-message"></div>
+            <form onsubmit="handleCreateAccount(event)">
+              <div class="form-group">
+                <label for="new-username">Username</label>
+                <input 
+                  id="new-username" 
+                  type="text" 
+                  placeholder="Enter username (3-32 chars)"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="new-password">Password</label>
+                <input 
+                  id="new-password" 
+                  type="password" 
+                  placeholder="Enter password (6+ chars)"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="new-email">Email (optional)</label>
+                <input 
+                  id="new-email" 
+                  type="email" 
+                  placeholder="Enter email"
+                />
+              </div>
+              <div class="checkbox-group">
+                <input id="new-admin" type="checkbox" />
+                <label for="new-admin">Make this account an admin</label>
+              </div>
+              <button type="submit" class="btn-action success" style="width: 100%;">Create Account</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- IP Blocking View -->
+        <div id="ips" class="admin-view">
+          <div class="admin-section">
+            <h3>Block IP Address</h3>
+            <div id="ip-message"></div>
+            <form onsubmit="handleBlockIP(event)">
+              <div class="form-group">
+                <label for="block-ip">IP Address</label>
+                <input 
+                  id="block-ip" 
+                  type="text" 
+                  placeholder="e.g., 192.168.1.100"
+                  pattern="\d+\.\d+\.\d+\.\d+"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="block-reason">Reason</label>
+                <textarea 
+                  id="block-reason" 
+                  placeholder="Why is this IP being blocked?"
+                  required
+                ></textarea>
+              </div>
+              <div class="form-group">
+                <label for="block-duration">Duration (0 = permanent)</label>
+                <input 
+                  id="block-duration" 
+                  type="number" 
+                  placeholder="Hours (0 for permanent)"
+                  value="0"
+                  min="0"
+                />
+              </div>
+              <button type="submit" class="btn-action danger" style="width: 100%;">Block IP</button>
+            </form>
+          </div>
+
+          <div class="admin-section">
+            <h3>Blocked IPs</h3>
+            <div id="blocked-ips" class="ip-list loading">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Audit Log View -->
+        <div id="audit" class="admin-view">
+          <div class="admin-section">
+            <h3>Audit Log (Last 100 Actions)</h3>
+            <button onclick="loadAuditLog()" style="margin-bottom: 15px;" class="btn-action">🔄 Refresh</button>
+            <div id="audit-container" class="audit-list loading">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_API = '/api/admin';
+    let adminToken = null;
+    let currentUser = null;
+    let allUsers = [];
+
+    // Initialize admin panel
+    function init() {
+      checkAdminAccess();
+      updateTime();
+      setInterval(updateTime, 1000);
+    }
+
+    // Check if admin is authorized
+    function checkAdminAccess() {
+      const clientIP = location.hostname === 'localhost' ? '127.0.0.1' : location.hostname;
+      document.getElementById('admin-ip').textContent = clientIP;
+
+      // For testing: show warning if not on 192.168.1.X
+      if (!clientIP.match(/192\.168\.1\.\d+/)) {
+        console.warn('⚠️ Admin panel restricted to 192.168.1.X network. Current IP:', clientIP);
+        console.log('For local testing, access will work if proxied correctly.');
+      }
+    }
+
+    // Update time display
+    function updateTime() {
+      const now = new Date();
+      const time = now.toLocaleTimeString('en-US', { hour12: false });
+      document.getElementById('admin-time').textContent = time;
+    }
+
+    // Switch views
+    function switchView(view) {
+      // Hide all views
+      document.querySelectorAll('.admin-view').forEach(el => {
+        el.classList.remove('active');
+      });
+
+      // Remove active class from buttons
+      document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Show selected view
+      document.getElementById(view).classList.add('active');
+      event.target.classList.add('active');
+
+      // Load data for view
+      if (view === 'dashboard') loadDashboard();
+      else if (view === 'users') loadUsers();
+      else if (view === 'ips') loadBlockedIPs();
+      else if (view === 'audit') loadAuditLog();
+    }
+
+    // Load dashboard stats
+    async function loadDashboard() {
+      const container = document.getElementById('stats-container');
+      container.classList.add('loading');
+      container.innerHTML = '<div class="loading">Loading statistics...</div>';
+
+      try {
+        const response = await fetch(`${ADMIN_API}/stats`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load stats');
+        }
+
+        const stats = data.stats || {};
+        container.classList.remove('loading');
+        container.innerHTML = `
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-card-label">Total Users</div>
+              <div class="stat-card-value">${stats.totalUsers || 0}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-label">Active This Month</div>
+              <div class="stat-card-value">${stats.activeThisMonth || 0}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-label">Banned Accounts</div>
+              <div class="stat-card-value">${stats.bannedCount || 0}</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-label">Blocked IPs</div>
+              <div class="stat-card-value">${stats.blockedIPCount || 0}</div>
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        container.classList.remove('loading');
+        container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    }
+
+    // Load users list
+    async function loadUsers() {
+      const container = document.getElementById('users-container');
+      container.classList.add('loading');
+      container.innerHTML = '<div class="loading">Loading users...</div>';
+
+      try {
+        const response = await fetch(`${ADMIN_API}/users`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load users');
+        }
+
+        allUsers = data.users || [];
+        displayUsers(allUsers);
+      } catch (error) {
+        container.classList.remove('loading');
+        container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    }
+
+    // Display users
+    function displayUsers(users) {
+      const container = document.getElementById('users-container');
+      container.classList.remove('loading');
+
+      if (users.length === 0) {
+        container.innerHTML = '<div style="color: #00ff4177; padding: 20px; text-align: center;">No users found</div>';
+        return;
+      }
+
+      container.innerHTML = users.map(user => `
+        <div class="user-row" onclick="viewUserDetail(${user.id})">
+          <div class="user-info">
+            <div class="user-id">ID: ${user.id}</div>
+            <div class="user-username">${user.username}</div>
+            <div class="user-created">${new Date(user.created_at).toLocaleDateString()}</div>
+          </div>
+          <div class="user-status">
+            ${user.is_admin ? '<span class="status-badge status-admin">ADMIN</span>' : ''}
+            ${user.is_banned ? '<span class="status-badge status-banned">BANNED</span>' : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // View user details
+    async function viewUserDetail(userId) {
+      const detailDiv = document.getElementById('user-detail');
+      detailDiv.innerHTML = '<div class="loading">Loading user details...</div>';
+
+      try {
+        const response = await fetch(`${ADMIN_API}/users/${userId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load user');
+        }
+
+        const user = data.user;
+        detailDiv.innerHTML = `
+          <div class="user-detail">
+            <div class="detail-header">
+              <div>
+                <h2>${user.username}</h2>
+                <div style="color: #00ff4177; font-size: 12px;">ID: ${user.id} | Created: ${new Date(user.created_at).toLocaleString()}</div>
+              </div>
+              <button class="detail-close" onclick="document.getElementById('user-detail').innerHTML = ''">Close</button>
+            </div>
+
+            <div class="detail-stats">
+              <div class="stat-item">
+                <div class="stat-label">Total XP</div>
+                <div class="stat-value">${user.total_xp?.toLocaleString() || 0}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Prestige Level</div>
+                <div class="stat-value">${user.prestige_level || 0}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Playtime</div>
+                <div class="stat-value">${formatSeconds(user.playtime_seconds || 0)}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">Currency Earned</div>
+                <div class="stat-value">E$ ${(user.currency_earned || 0).toLocaleString()}</div>
+              </div>
+            </div>
+
+            <div class="detail-actions">
+              ${!user.is_banned ? `
+                <button class="btn-action danger" onclick="banUser(${user.id})">Ban Account</button>
+              ` : `
+                <button class="btn-action success" onclick="unbanUser(${user.id})">Unban Account</button>
+              `}
+              <button class="btn-action danger" onclick="resetUserProgress(${user.id})">Reset Progress</button>
+              <button class="btn-action danger" onclick="nerfUserStats(${user.id})">Nerf Stats</button>
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        detailDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    }
+
+    // Search users
+    function searchUsers() {
+      const query = document.getElementById('user-search').value.toLowerCase();
+      const filtered = allUsers.filter(user => 
+        user.username.toLowerCase().includes(query) ||
+        user.id.toString().includes(query)
+      );
+      displayUsers(filtered);
+    }
+
+    // Ban user
+    async function banUser(userId) {
+      const reason = prompt('Reason for banning:');
+      if (!reason) return;
+
+      try {
+        const response = await fetch(`${ADMIN_API}/users/${userId}/ban`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason })
+        });
+
+        const data = await response.json();
+        alert(data.message || 'User banned');
+        loadUsers();
+        viewUserDetail(userId);
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // Unban user
+    async function unbanUser(userId) {
+      try {
+        const response = await fetch(`${ADMIN_API}/users/${userId}/unban`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+        alert(data.message || 'User unbanned');
+        loadUsers();
+        viewUserDetail(userId);
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // Reset user progress
+    async function resetUserProgress(userId) {
+      if (!confirm('Are you sure? This will delete all saves and reset progress.')) return;
+
+      try {
+        const response = await fetch(`${ADMIN_API}/users/${userId}/reset-progress`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+        alert(data.message || 'Progress reset');
+        viewUserDetail(userId);
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // Nerf user stats
+    async function nerfUserStats(userId) {
+      const multiplier = prompt('Apply multiplier (e.g., 0.5 for 50% nerf):', '0.5');
+      if (!multiplier) return;
+
+      try {
+        const response = await fetch(`${ADMIN_API}/users/${userId}/nerf`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ multiplier: parseFloat(multiplier) })
+        });
+
+        const data = await response.json();
+        alert(data.message || 'Stats nerfed');
+        viewUserDetail(userId);
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // Create account
+    async function handleCreateAccount(event) {
+      event.preventDefault();
+
+      const username = document.getElementById('new-username').value;
+      const password = document.getElementById('new-password').value;
+      const email = document.getElementById('new-email').value || null;
+      const isAdmin = document.getElementById('new-admin').checked;
+
+      const messageDiv = document.getElementById('create-message');
+
+      try {
+        const response = await fetch(`${ADMIN_API}/users/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, email, is_admin: isAdmin })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          messageDiv.innerHTML = `<div class="form-message error">${data.error || 'Creation failed'}</div>`;
+          return;
+        }
+
+        messageDiv.innerHTML = `<div class="form-message success">Account created! ID: ${data.userId}</div>`;
+        event.target.reset();
+      } catch (error) {
+        messageDiv.innerHTML = `<div class="form-message error">Error: ${error.message}</div>`;
+      }
+    }
+
+    // Block IP
+    async function handleBlockIP(event) {
+      event.preventDefault();
+
+      const ip = document.getElementById('block-ip').value;
+      const reason = document.getElementById('block-reason').value;
+      const duration = parseInt(document.getElementById('block-duration').value) || 0;
+
+      const messageDiv = document.getElementById('ip-message');
+
+      try {
+        const response = await fetch(`${ADMIN_API}/ips/block`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ip_address: ip, reason, duration_hours: duration })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          messageDiv.innerHTML = `<div class="form-message error">${data.error || 'Block failed'}</div>`;
+          return;
+        }
+
+        messageDiv.innerHTML = `<div class="form-message success">IP blocked successfully</div>`;
+        event.target.reset();
+        loadBlockedIPs();
+      } catch (error) {
+        messageDiv.innerHTML = `<div class="form-message error">Error: ${error.message}</div>`;
+      }
+    }
+
+    // Load blocked IPs
+    async function loadBlockedIPs() {
+      const container = document.getElementById('blocked-ips');
+      container.classList.add('loading');
+      container.innerHTML = '<div class="loading">Loading blocked IPs...</div>';
+
+      try {
+        const response = await fetch(`${ADMIN_API}/ips/blocked`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load IPs');
+        }
+
+        const ips = data.blocked_ips || [];
+        container.classList.remove('loading');
+
+        if (ips.length === 0) {
+          container.innerHTML = '<div style="color: #00ff4177; padding: 20px; text-align: center;">No blocked IPs</div>';
+          return;
+        }
+
+        container.innerHTML = ips.map(ip => `
+          <div class="ip-row">
+            <div>
+              <div class="ip-address">${ip.ip_address}</div>
+              <div class="ip-reason">${ip.reason}</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="ip-expires">${ip.expires_at ? new Date(ip.expires_at).toLocaleString() : 'Permanent'}</div>
+              <button class="btn-action" onclick="unblockIP('${ip.ip_address}')" style="padding: 4px 8px; font-size: 10px;">Remove</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        container.classList.remove('loading');
+        container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    }
+
+    // Unblock IP
+    async function unblockIP(ip) {
+      if (!confirm(`Unblock ${ip}?`)) return;
+
+      try {
+        const response = await fetch(`${ADMIN_API}/ips/${encodeURIComponent(ip)}/unblock`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+        alert(data.message || 'IP unblocked');
+        loadBlockedIPs();
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // Load audit log
+    async function loadAuditLog() {
+      const container = document.getElementById('audit-container');
+      container.classList.add('loading');
+      container.innerHTML = '<div class="loading">Loading audit log...</div>';
+
+      try {
+        const response = await fetch(`${ADMIN_API}/actions`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load audit log');
+        }
+
+        const actions = data.actions || [];
+        container.classList.remove('loading');
+
+        if (actions.length === 0) {
+          container.innerHTML = '<div style="color: #00ff4177; padding: 20px; text-align: center;">No audit log entries</div>';
+          return;
+        }
+
+        container.innerHTML = actions.map(action => `
+          <div class="audit-entry">
+            <div><span class="audit-time">${new Date(action.created_at).toLocaleString()}</span></div>
+            <div class="audit-action">👤 ${action.admin_id} → ${action.action_type}</div>
+            ${action.description ? `<div class="audit-details">${action.description}</div>` : ''}
+          </div>
+        `).join('');
+      } catch (error) {
+        container.classList.remove('loading');
+        container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+      }
+    }
+
+    // Format seconds to human readable
+    function formatSeconds(seconds) {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      return `${hours}h ${minutes}m`;
+    }
+
+    // Handle admin logout
+    function handleAdminLogout() {
+      if (confirm('Logout from admin panel?')) {
+        window.location.href = '/auth.html';
+      }
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

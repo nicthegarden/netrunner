@@ -1,4 +1,5 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { db, hashPassword } from '../db.js';
 import {
   generateAccessToken,
@@ -10,6 +11,31 @@ import {
 
 const router = express.Router();
 
+// Rate limiting middleware
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per window
+  message: 'Too many login attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // 10 requests per window
+  message: 'Too many registration attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const refreshLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 30, // 30 requests per window
+  message: 'Too many token refresh attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Check IP before any auth operations
 router.use(checkBlockedIP);
 
@@ -18,7 +44,7 @@ router.use(checkBlockedIP);
  * Register a new user account
  * Body: { username, password, email? }
  */
-router.post('/auth/register', async (req, res) => {
+router.post('/auth/register', registerLimiter, async (req, res) => {
   try {
     const { username, password, email } = req.body;
 
@@ -99,7 +125,7 @@ router.post('/auth/register', async (req, res) => {
  * Login with username and password
  * Body: { username, password, rememberMe? }
  */
-router.post('/auth/login', async (req, res) => {
+router.post('/auth/login', loginLimiter, async (req, res) => {
   try {
     const { username, password, rememberMe } = req.body;
 
@@ -174,7 +200,7 @@ router.post('/auth/login', async (req, res) => {
  * Refresh expired access token using refresh token
  * Body: { refreshToken }
  */
-router.post('/auth/refresh', async (req, res) => {
+router.post('/auth/refresh', refreshLimiter, async (req, res) => {
   try {
     const { refreshToken } = req.body;
 
