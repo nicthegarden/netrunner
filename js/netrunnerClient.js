@@ -706,6 +706,8 @@ class NetrunnerClient {
 }
 
 // Export for use in browser and Node.js
+export { NetrunnerClient };
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = NetrunnerClient;
 } else if (typeof window !== 'undefined') {

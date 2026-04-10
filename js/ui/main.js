@@ -1071,6 +1071,8 @@ export class UI {
     } else if (view === 'changelog') {
       this.renderChangelogView();
     }
+    // Multiplayer views are handled by MultiplayerManager
+    // No rendering needed here as multiplayer uses dynamic content
   }
 
   // ==========================================
