@@ -1,16 +1,62 @@
 /**
  * Multiplayer Module - Handles all multiplayer UI and interactions
+ * Phase 3 Optimizations: Caching, WebSocket resilience, error boundaries
  */
+
+/**
+ * Cache layer with TTL support
+ */
+class Cache {
+  constructor(ttlMs = 5 * 60 * 1000) {
+    this.data = new Map();
+    this.timestamps = new Map();
+    this.ttl = ttlMs;
+  }
+
+  set(key, value) {
+    this.data.set(key, value);
+    this.timestamps.set(key, Date.now());
+  }
+
+  get(key) {
+    const timestamp = this.timestamps.get(key);
+    if (!timestamp) return null;
+    
+    const age = Date.now() - timestamp;
+    if (age > this.ttl) {
+      this.data.delete(key);
+      this.timestamps.delete(key);
+      return null;
+    }
+    
+    return this.data.get(key);
+  }
+
+  isStale(key) {
+    const timestamp = this.timestamps.get(key);
+    if (!timestamp) return true;
+    return (Date.now() - timestamp) > this.ttl;
+  }
+
+  clear() {
+    this.data.clear();
+    this.timestamps.clear();
+  }
+}
 
 export class MultiplayerManager {
   constructor(gameClient, gameInstance) {
     this.client = gameClient;
     this.game = gameInstance;
+    this.cache = new Cache(5 * 60 * 1000); // 5-minute TTL
+    this.wsReconnectAttempts = 0;
+    this.wsReconnectMaxAttempts = 5;
+    this.wsReconnectDelay = 1000; // 1 second base delay
     this.init();
   }
 
   init() {
-    console.log('✓ Multiplayer module initialized');
+    console.log('✓ Multiplayer module initialized with caching (5min TTL)');
     this.setupEventListeners();
     this.setupWebSocketListeners();
   }
@@ -34,8 +80,10 @@ export class MultiplayerManager {
   setupWebSocketListeners() {
     if (!this.client) return;
 
+    // Duel events
     this.client.on('duel:started', (match) => {
       this.showNotification(`🔥 Duel started vs ${match.opponent}!`);
+      this.cache.clear(); // Invalidate cache on game event
       this.refreshPvPUI();
     });
 
@@ -43,18 +91,70 @@ export class MultiplayerManager {
       const playerUsername = this.game?.player?.username || 'Player';
       const result = match.winner === playerUsername ? '🎉 WON' : '😢 LOST';
       this.showNotification(`${result} against ${match.opponent}`);
+      this.cache.clear();
       this.refreshPvPUI();
     });
 
+    // Guild events
     this.client.on('guild:joined', (guild) => {
       this.showNotification(`🏰 Joined guild: ${guild.name}`);
+      this.cache.clear();
       this.refreshGuildUI();
     });
 
+    this.client.on('guild:left', (guildId) => {
+      this.showNotification(`👋 You left the guild`);
+      this.cache.clear();
+      this.refreshGuildUI();
+    });
+
+    // Event events
     this.client.on('event:started', (event) => {
       this.showNotification(`📅 Event started: ${event.name}`);
+      this.cache.clear();
       this.refreshEventUI();
     });
+
+    // WebSocket connection events (with reconnection)
+    this.client.on('connect', () => {
+      console.log('✓ WebSocket connected');
+      this.wsReconnectAttempts = 0;
+      this.showNotification('🟢 Connected to server');
+    });
+
+    this.client.on('disconnect', () => {
+      console.warn('✗ WebSocket disconnected, attempting reconnect...');
+      this.attemptReconnect();
+    });
+
+    this.client.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      this.showNotification(`⚠️ Connection error: ${error.message || 'Unknown'}`);
+      this.attemptReconnect();
+    });
+  }
+
+  /**
+   * Exponential backoff reconnection logic
+   */
+  attemptReconnect() {
+    if (this.wsReconnectAttempts >= this.wsReconnectMaxAttempts) {
+      console.error('Max reconnection attempts reached');
+      this.showNotification('❌ Server connection lost. Please refresh the page.');
+      return;
+    }
+
+    const delay = this.wsReconnectDelay * Math.pow(2, this.wsReconnectAttempts);
+    this.wsReconnectAttempts++;
+
+    console.log(`Reconnecting in ${delay}ms (attempt ${this.wsReconnectAttempts}/${this.wsReconnectMaxAttempts})`);
+    this.showNotification(`🔄 Reconnecting... (${this.wsReconnectAttempts}/${this.wsReconnectMaxAttempts})`);
+
+    setTimeout(() => {
+      if (this.client?.reconnect) {
+        this.client.reconnect();
+      }
+    }, delay);
   }
 
   async challengePlayer(playerId) {
@@ -92,17 +192,29 @@ export class MultiplayerManager {
     }
   }
 
-   async refreshPvPUI() {
+  async refreshPvPUI() {
     const pvpContainer = document.getElementById('pvp-container');
     if (!pvpContainer || pvpContainer.style.display === 'none') {
-      return; // UI not visible
+      return; // UI not visible - skip expensive refresh
     }
 
     try {
       const playerUsername = this.game?.player?.username || 'Player';
       
-      // Get player stats
-      const stats = await this.client.pvp.getStats(playerUsername);
+      // Check cache first
+      const cacheKey = `pvp_stats_${playerUsername}`;
+      let stats = this.cache.get(cacheKey);
+      
+      if (!stats) {
+        // Cache miss - fetch from API
+        stats = await this.client.pvp.getStats(playerUsername);
+        this.cache.set(cacheKey, stats);
+        console.log('PvP stats fetched from API');
+      } else {
+        console.log('PvP stats retrieved from cache');
+      }
+
+      // Render stats
       const statsDiv = document.getElementById('pvp-stats');
       if (statsDiv) {
         const totalMatches = (stats.duelsWon || 0) + (stats.duelsLost || 0);
@@ -118,8 +230,18 @@ export class MultiplayerManager {
         `;
       }
 
-      // Get leaderboard
-      const leaderboard = await this.client.leaderboards.getELO();
+      // Get leaderboard (cached)
+      const leaderboardCacheKey = 'pvp_leaderboard';
+      let leaderboard = this.cache.get(leaderboardCacheKey);
+      
+      if (!leaderboard) {
+        leaderboard = await this.client.leaderboards.getELO();
+        this.cache.set(leaderboardCacheKey, leaderboard);
+        console.log('Leaderboard fetched from API');
+      } else {
+        console.log('Leaderboard retrieved from cache');
+      }
+
       this.renderLeaderboard(leaderboard, 'pvp-opponents');
       
       // Render recent duel history
@@ -127,31 +249,78 @@ export class MultiplayerManager {
         this.renderDuelHistory(stats.recentDuels);
       }
     } catch (error) {
-      console.error('Error refreshing PvP UI:', error);
-      const statsDiv = document.getElementById('pvp-stats');
-      if (statsDiv) {
-        statsDiv.innerHTML = '<p style="color:#ff0000;">Error loading stats. Make sure you\'re logged in.</p>';
-      }
+      this.handleError('Error refreshing PvP UI', error, 'pvp-stats');
     }
   }
 
   async refreshGuildUI() {
+    const guildContainer = document.getElementById('guild-container');
+    if (!guildContainer || guildContainer.style.display === 'none') {
+      return; // UI not visible - skip expensive refresh
+    }
+
     try {
-      const guilds = await this.client.guilds.list();
+      // Check cache first
+      const guildsCacheKey = 'guilds_list';
+      let guilds = this.cache.get(guildsCacheKey);
+      
+      if (!guilds) {
+        guilds = await this.client.guilds.list();
+        this.cache.set(guildsCacheKey, guilds);
+        console.log('Guilds fetched from API');
+      } else {
+        console.log('Guilds retrieved from cache');
+      }
+
       this.renderGuildsList(guilds);
       this.displayMyGuild();
     } catch (error) {
-      console.error('Error refreshing guild UI:', error);
+      this.handleError('Error refreshing guild UI', error, 'available-guilds');
     }
   }
 
   async refreshEventUI() {
+    const eventContainer = document.getElementById('event-container');
+    if (!eventContainer || eventContainer.style.display === 'none') {
+      return; // UI not visible - skip expensive refresh
+    }
+
     try {
-      const events = await this.client.events.list();
+      // Check cache first
+      const eventsCacheKey = 'events_list';
+      let events = this.cache.get(eventsCacheKey);
+      
+      if (!events) {
+        events = await this.client.events.list();
+        this.cache.set(eventsCacheKey, events);
+        console.log('Events fetched from API');
+      } else {
+        console.log('Events retrieved from cache');
+      }
+
       this.renderEventsList(events);
       this.renderGuildWars();
     } catch (error) {
-      console.error('Error refreshing events UI:', error);
+      this.handleError('Error refreshing events UI', error, 'active-events');
+    }
+  }
+
+  /**
+   * Centralized error handling with graceful degradation
+   */
+  handleError(title, error, containerId) {
+    console.error(title, error);
+    this.showNotification(`⚠️ ${title}`);
+    
+    // Show error state in UI
+    if (containerId) {
+      const container = document.getElementById(containerId);
+      if (container) {
+        container.innerHTML = `<p style="color:#ff4444; padding: 15px;">
+          ${title}: ${error?.message || 'Unknown error'}. 
+          <br/><small>Data may be outdated or unavailable.</small>
+        </p>`;
+      }
     }
   }
 
@@ -229,7 +398,18 @@ export class MultiplayerManager {
 
     try {
       const playerUsername = this.game?.player?.username || 'Player';
-      const myGuild = await this.client.guilds.getMyGuild(playerUsername);
+      
+      // Check cache first
+      const myGuildCacheKey = `my_guild_${playerUsername}`;
+      let myGuild = this.cache.get(myGuildCacheKey);
+      
+      if (!myGuild) {
+        myGuild = await this.client.guilds.getMyGuild(playerUsername);
+        this.cache.set(myGuildCacheKey, myGuild);
+        console.log('My guild fetched from API');
+      } else {
+        console.log('My guild retrieved from cache');
+      }
       
       if (!myGuild) {
         container.innerHTML = '<p class="empty-state">You are not in a guild. Create or join one!</p>';
@@ -247,8 +427,7 @@ export class MultiplayerManager {
         </button>
       `;
     } catch (error) {
-      console.error('Error loading my guild:', error);
-      container.innerHTML = '<p class="empty-state">Error loading guild info</p>';
+      this.handleError('Error loading my guild', error, 'my-guild');
     }
   }
 
@@ -287,7 +466,17 @@ export class MultiplayerManager {
     if (!container) return;
 
     try {
-      const guildWars = await this.client.events.listGuildWars();
+      // Check cache first
+      const guildWarsCacheKey = 'guild_wars_list';
+      let guildWars = this.cache.get(guildWarsCacheKey);
+      
+      if (!guildWars) {
+        guildWars = await this.client.events.listGuildWars();
+        this.cache.set(guildWarsCacheKey, guildWars);
+        console.log('Guild wars fetched from API');
+      } else {
+        console.log('Guild wars retrieved from cache');
+      }
       
       if (!Array.isArray(guildWars) || guildWars.length === 0) {
         container.innerHTML = '<p class="empty-state">No active guild wars</p>';
@@ -307,8 +496,7 @@ export class MultiplayerManager {
         )
         .join('');
     } catch (error) {
-      console.error('Error loading guild wars:', error);
-      container.innerHTML = '<p class="empty-state">Error loading guild wars</p>';
+      this.handleError('Error loading guild wars', error, 'guild-wars');
     }
   }
 
@@ -326,10 +514,12 @@ export class MultiplayerManager {
   }
 }
 
-// Global functions for onclick handlers
+// Global functions for onclick handlers (with cache invalidation)
+
 window.joinGuild = async (guildId) => {
   try {
     await window.gameClient.guilds.join(guildId);
+    window.multiplayerManager.cache.clear(); // Invalidate cache
     window.multiplayerManager.showNotification('✓ Joined guild!');
     window.multiplayerManager.refreshGuildUI();
   } catch (error) {
@@ -340,6 +530,7 @@ window.joinGuild = async (guildId) => {
 window.joinEvent = async (eventId) => {
   try {
     await window.gameClient.events.join(eventId);
+    window.multiplayerManager.cache.clear(); // Invalidate cache
     window.multiplayerManager.showNotification('✓ Joined event!');
     window.multiplayerManager.refreshEventUI();
   } catch (error) {
@@ -356,6 +547,7 @@ window.leaveGuild = async (guildId) => {
 
   try {
     await window.gameClient.guilds.leave(guildId);
+    window.multiplayerManager.cache.clear(); // Invalidate cache
     window.multiplayerManager.showNotification('✓ Left guild!');
     window.multiplayerManager.refreshGuildUI();
     window.multiplayerManager.displayMyGuild();
