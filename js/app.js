@@ -170,6 +170,14 @@ function startSkillActivity(skillId, actionId) {
     ui.updateBackgroundHackDisplay();
   }
 
+  // Check if background hack is running and show warning
+  const bgHackInfo = game.skillManager.getBackgroundHackInfo();
+  if (bgHackInfo && !action.enemy) {
+    // Show warning modal for non-combat activities when parallel hacking is active
+    showParallelHackWarning(skillId, actionId, action, bgHackInfo);
+    return;
+  }
+
   // For combat-type activities, start combat
   if (action.enemy) {
     skill.stopAction();
@@ -189,6 +197,47 @@ function startSkillActivity(skillId, actionId) {
   } else {
     ui.notify('Failed to start activity.', 'error');
   }
+}
+
+function showParallelHackWarning(skillId, actionId, action, bgHackInfo) {
+  const game = getGame();
+  
+  // Create warning modal
+  const modal = document.createElement('div');
+  modal.id = 'parallel-hack-warning-modal';
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-dialog" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>⚠️ PARALLEL HACK ACTIVE</h2>
+        <button class="modal-close" data-action="close-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <p style="margin-bottom: 15px;">
+          You have a <strong>${bgHackInfo.skillName}</strong> background hack running.
+        </p>
+        <div style="background: #0f0f1e; border-left: 3px solid #ff6600; padding: 12px; margin-bottom: 15px;">
+          <strong style="color: #ff6600;">XP PENALTY:</strong> Primary activity XP will be reduced to <strong>75%</strong> while parallel hacking.
+        </div>
+        <p style="margin-bottom: 15px; font-size: 0.9em; color: #888;">
+          <strong>Activity:</strong> ${action.name}<br>
+          <strong>Current Multiplier:</strong> <span style="color: #ff6600;">75%</span> (25% reduction)
+        </p>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" data-action="confirm-with-parallel-hack" data-skill-id="${skillId}" data-action-id="${actionId}" style="flex: 1;">
+            Start Activity (75% XP)
+          </button>
+          <button class="btn" onclick="document.getElementById('parallel-hack-warning-modal').remove(); ui.closePicker();" style="flex: 1;">
+            Cancel
+          </button>
+        </div>
+        <p style="margin-top: 15px; font-size: 0.85em; color: #666;">
+          💡 <strong>Tip:</strong> Stop the background hack first for full XP rewards.
+        </p>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
 }
 
 function stopSkillActivity(skillId) {
@@ -464,6 +513,30 @@ document.addEventListener('click', (e) => {
     return;
   }
 
+  // Confirm start activity with parallel hack penalty
+  const confirmWithPenalty = match('[data-action="confirm-with-parallel-hack"]');
+  if (confirmWithPenalty) {
+    const skillId = confirmWithPenalty.dataset.skillId;
+    const actionId = confirmWithPenalty.dataset.actionId;
+    const modal = document.getElementById('parallel-hack-warning-modal');
+    if (modal) modal.remove();
+    
+    const game = getGame();
+    const skill = game.skillManager.getSkill(skillId);
+    const activities = ACTIVITIES[skillId];
+    const action = activities.find(a => a.id === actionId);
+    
+    // Start the activity with parallel hack penalty applied
+    const started = skill.startAction(actionId);
+    if (started) {
+      ui.updateSkillListings();
+      ui.closePicker();
+    } else {
+      ui.notify('Failed to start activity.', 'error');
+    }
+    return;
+  }
+
   // Shop buy button
   const buyItem = match('[data-action="buy-item"]');
   if (buyItem) {
@@ -575,6 +648,14 @@ document.addEventListener('click', (e) => {
   const stopBgHack = match('[data-action="stop-background-hack"]');
   if (stopBgHack) {
     stopBackgroundHack();
+    return;
+  }
+
+  // Close modal (used by parallel hack warning modal)
+  const closeBtn = match('[data-action="close-modal"]');
+  if (closeBtn) {
+    const modal = closeBtn.closest('.modal-overlay');
+    if (modal) modal.remove();
     return;
   }
 });

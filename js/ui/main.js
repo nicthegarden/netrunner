@@ -285,9 +285,14 @@ export class UI {
 
       // Current activity display
       let activityStr = '';
+      const bgHackInfo = game.skillManager.getBackgroundHackInfo();
+      const hasParallelPenalty = bgHackInfo && !skill._isBackgroundHack && skill.isActive;
+      
       if (skill.isActive && skill.activeAction) {
         if (skill._isBackgroundHack) {
           activityStr = `<div class="skill-activity bg-hack-activity">BG Hack: ${skill.activeAction.name} (75%)</div>`;
+        } else if (hasParallelPenalty) {
+          activityStr = `<div class="skill-activity parallel-penalty-active">Active: ${skill.activeAction.name} <span style="color: #ff6600;">(75% XP - Parallel Hack Active)</span></div>`;
         } else {
           activityStr = `<div class="skill-activity">Active: ${skill.activeAction.name}</div>`;
         }
@@ -332,11 +337,21 @@ export class UI {
     overlay.className = 'picker-overlay';
     overlay.onclick = (e) => { if (e.target === overlay) this.closePicker(); };
 
+    const game = getGame();
+    const bgHackInfo = game.skillManager.getBackgroundHackInfo();
+    const warningHtml = bgHackInfo && !skill._isBackgroundHack ? `
+      <div style="background: #1a0a0a; border: 2px solid #ff6600; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+        <strong style="color: #ff6600;">⚠️ PARALLEL HACK ACTIVE</strong><br>
+        <small>Starting an activity will reduce your XP to <strong>75%</strong> while the background hack runs.</small>
+      </div>
+    ` : '';
+
     let html = `<div class="picker-modal">
       <div class="picker-header">
         <h3>${skill.icon} ${skill.name} — Activities</h3>
         <button class="btn-small btn-danger" data-action="close-picker">X</button>
       </div>
+      ${warningHtml}
       <div class="picker-list">`;
 
     activities.forEach(act => {

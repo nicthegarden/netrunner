@@ -2,7 +2,7 @@ import { events, EVENTS } from '../engine/events.js';
 import { calculateRequiredXP, getTotalXPForLevel, SKILLS, ACTIVITIES, BACKGROUND_HACK_SKILLS, BACKGROUND_HACK_EFFICIENCY } from '../data/skillData.js';
 
 export class Skill {
-  constructor(id, name, category, icon, color, prestige = null) {
+  constructor(id, name, category, icon, color, prestige = null, skillManager = null) {
     this.id = id;
     this.name = name;
     this.category = category;
@@ -14,6 +14,7 @@ export class Skill {
     this.isActive = false;
     this.activeAction = null;
     this.prestige = prestige;
+    this.skillManager = skillManager; // Reference to SkillManager for checking parallel hack status
     this.actionProgress = 0;
     this._isBackgroundHack = false; // true when running as background hacking task
   }
@@ -195,51 +196,60 @@ export class Skill {
     return null;
   }
 
-   completeAction() {
-     const action = this.activeAction;
-     const prestigeMult = this.prestige ? this.prestige.getXPMultiplier() : 1.0;
-     
-     // Apply background hack efficiency penalty (75% XP when running in background)
-     const bgEfficiency = this._isBackgroundHack ? BACKGROUND_HACK_EFFICIENCY : 1.0;
-     this.gainXP(Math.floor(action.xp * bgEfficiency), action.id, prestigeMult, this._equipment);
+    completeAction() {
+      const action = this.activeAction;
+      const prestigeMult = this.prestige ? this.prestige.getXPMultiplier() : 1.0;
+      
+      // Apply background hack efficiency penalty (75% XP when running in background)
+      const bgEfficiency = this._isBackgroundHack ? BACKGROUND_HACK_EFFICIENCY : 1.0;
+      
+      // Also apply penalty if a DIFFERENT background hack is running (primary activity penalty)
+      let primaryActivityMultiplier = 1.0;
+      if (!this._isBackgroundHack && this.skillManager?.backgroundHack) {
+        // This is the primary activity, and a parallel hack is running
+        primaryActivityMultiplier = 0.75; // 25% penalty on primary activity XP
+      }
+      
+      const totalMultiplier = bgEfficiency * primaryActivityMultiplier;
+      this.gainXP(Math.floor(action.xp * totalMultiplier), action.id, prestigeMult, this._equipment);
 
-     // Build rewards result
-     const rewardResult = { xp: action.xp, items: {}, currency: 0, isBackground: this._isBackgroundHack };
+      // Build rewards result
+      const rewardResult = { xp: action.xp, items: {}, currency: 0, isBackground: this._isBackgroundHack, primaryMultiplier: primaryActivityMultiplier };
 
-     if (action.rewards) {
-       // Currency rewards (reduced by background efficiency)
-       if (action.rewards.currency) {
-         const range = action.rewards.currency;
-         const baseCurrency = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-         rewardResult.currency = Math.floor(baseCurrency * bgEfficiency);
-       }
-       // Item rewards (apply materialDropBonus - Tier 2d, reduced by background efficiency)
-       if (action.rewards.items) {
-         let dropBonus = 1.0;
-         if (this.prestige) {
-           dropBonus = 1.0 + (this.prestige.bonuses.materialDropBonus / 100);
-         }
-         
-         Object.entries(action.rewards.items).forEach(([itemId, range]) => {
-           const qty = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-           const boostedQty = Math.max(1, Math.floor(qty * dropBonus * bgEfficiency));
-           if (boostedQty > 0) {
-             rewardResult.items[itemId] = boostedQty;
-           }
-         });
-       }
-     }
+      if (action.rewards) {
+        // Currency rewards (reduced by background efficiency and/or primary activity penalty)
+        if (action.rewards.currency) {
+          const range = action.rewards.currency;
+          const baseCurrency = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+          rewardResult.currency = Math.floor(baseCurrency * totalMultiplier);
+        }
+        // Item rewards (apply materialDropBonus - Tier 2d, reduced by background efficiency and/or primary penalty)
+        if (action.rewards.items) {
+          let dropBonus = 1.0;
+          if (this.prestige) {
+            dropBonus = 1.0 + (this.prestige.bonuses.materialDropBonus / 100);
+          }
+          
+          Object.entries(action.rewards.items).forEach(([itemId, range]) => {
+            const qty = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+            const boostedQty = Math.max(1, Math.floor(qty * dropBonus * totalMultiplier));
+            if (boostedQty > 0) {
+              rewardResult.items[itemId] = boostedQty;
+            }
+          });
+        }
+      }
 
-     events.emit(EVENTS.SKILL_ACTION_COMPLETE, {
-       skill: this.id,
-       action: action.id,
-       xp: action.xp,
-       rewards: rewardResult,
-     });
+      events.emit(EVENTS.SKILL_ACTION_COMPLETE, {
+        skill: this.id,
+        action: action.id,
+        xp: action.xp,
+        rewards: rewardResult,
+      });
 
-     this.actionProgress = 0;
-     return rewardResult;
-   }
+      this.actionProgress = 0;
+      return rewardResult;
+    }
 
   serialize() {
     return {
@@ -320,7 +330,7 @@ export class SkillManager {
   initializeSkills() {
     Object.values(SKILLS).forEach(skillDef => {
       this.skills[skillDef.id] = new Skill(
-        skillDef.id, skillDef.name, skillDef.category, skillDef.icon, skillDef.color, this.prestige
+        skillDef.id, skillDef.name, skillDef.category, skillDef.icon, skillDef.color, this.prestige, this
       );
     });
   }
