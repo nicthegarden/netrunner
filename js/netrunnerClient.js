@@ -7,7 +7,7 @@
  * API requests, and game state synchronization.
  */
 
-class NetrunnerClient {
+export class NetrunnerClient {
   /**
    * Initialize the NETRUNNER multiplayer client
    * @param {Object} config - Configuration object
@@ -705,9 +705,7 @@ class NetrunnerClient {
   }
 }
 
-// Export for use in browser and Node.js
-export { NetrunnerClient };
-
+// Fallback for Node.js/CommonJS
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = NetrunnerClient;
 } else if (typeof window !== 'undefined') {
