@@ -140,4 +140,110 @@ export class SaveManager {
       return false;
     }
   }
+
+  /**
+   * Upload game save to server (requires auth token)
+   */
+  async uploadToServer() {
+    const accessToken = window.gameAuthState?.accessToken;
+    if (!accessToken) {
+      console.log('No auth token, skipping server save');
+      return false;
+    }
+
+    try {
+      // Get current save
+      const json = localStorage.getItem(SAVE_KEY);
+      if (!json) return false;
+
+      const saveData = JSON.parse(json);
+      const playtimeSeconds = this.game.player?.playtimeSeconds || 0;
+
+      // Upload to server
+      const response = await fetch('/api/saves/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          saveData: json, // Send as JSON string
+          playtimeSeconds: playtimeSeconds
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Server save upload failed:', response.statusText);
+        return false;
+      }
+
+      const data = await response.json();
+      console.log('Save uploaded to server, ID:', data.saveId);
+      return true;
+    } catch (e) {
+      console.error('Server save upload error:', e);
+      return false;
+    }
+  }
+
+  /**
+   * Load latest save from server (if available)
+   */
+  async loadFromServer() {
+    const accessToken = window.gameAuthState?.accessToken;
+    if (!accessToken) {
+      console.log('No auth token, loading from localStorage only');
+      return null;
+    }
+
+    try {
+      const response = await fetch('/api/saves/latest', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (!response.ok) {
+        console.log('No server save available');
+        return null;
+      }
+
+      const result = await response.json();
+      const serverSaveData = result.save?.data;
+
+      if (!serverSaveData) {
+        console.log('Invalid server save data');
+        return null;
+      }
+
+      // Check if server save is newer than local save
+      const localJson = localStorage.getItem(SAVE_KEY);
+      let useServerSave = true;
+
+      if (localJson) {
+        try {
+          const localData = JSON.parse(localJson);
+          const localTimestamp = localData.timestamp || 0;
+          const serverTimestamp = serverSaveData.timestamp || 0;
+
+          if (localTimestamp > serverTimestamp) {
+            console.log('Local save is newer, keeping local version');
+            useServerSave = false;
+          }
+        } catch (e) {
+          console.error('Error comparing saves:', e);
+        }
+      }
+
+      if (useServerSave) {
+        console.log('Using server save (newer or no local save)');
+        return serverSaveData;
+      }
+
+      return null;
+    } catch (e) {
+      console.error('Server load error:', e);
+      return null;
+    }
+  }
 }

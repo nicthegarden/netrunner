@@ -13,6 +13,7 @@ import { Prestige } from './systems/prestige.js';
 import { PassiveStats } from './systems/passiveStats.js';
 import { AbilityManager } from './systems/abilities.js';
 import { LivingWorld } from './systems/livingWorld.js';
+import { SyncManager } from './network/sync.js';
 import { ACTIVITIES, ENEMIES } from './data/skillData.js';
 
 export class Game {
@@ -41,14 +42,17 @@ export class Game {
     this.gameLoop = new GameLoop(this);
     this.saveManager = new SaveManager(this);
     this.offlineProgress = new OfflineProgress(this);
+    this.syncManager = new SyncManager(this); // Multiplayer sync
     this._eventUnsubs = [];
+    this.eventBus = events; // Expose EventBus for SyncManager
   }
 
   init() {
     // Wire up event listeners for reward distribution and achievement checking
     this._wireEvents();
 
-    // Try to load save
+    // Try to load from server first (if authenticated)
+    // Then fall back to localStorage
     const saveData = this.saveManager.load();
     if (saveData) {
       this.loadGame(saveData);
@@ -73,13 +77,40 @@ export class Game {
     this.gameLoop.start();
     this.saveManager.startAutoSave();
     
+    // Start server auto-save (every 2 minutes if authenticated)
+    this.startServerAutoSave();
+    
     // Start progress sync to backend (every 5 minutes)
     this.startProgressSync();
+
+    // Setup multiplayer (try to login with existing token if available)
+    this._initMultiplayer();
+    
+    // Sync before unload
+    window.addEventListener('beforeunload', () => {
+      if (this.syncManager) {
+        this.syncManager.syncBeforeUnload();
+      }
+    });
     
     events.emit(EVENTS.GAME_LOADED, {
       player: this.player,
       skills: this.skillManager.getAllSkills(),
     });
+  }
+
+  // Auto-save game to server (every 2 minutes if authenticated)
+  startServerAutoSave() {
+    setInterval(async () => {
+      const hasAuth = window.gameAuthState?.accessToken;
+      if (hasAuth) {
+        try {
+          await this.saveManager.uploadToServer();
+        } catch (error) {
+          console.error('Server auto-save failed:', error);
+        }
+      }
+    }, 120000); // 2 minutes
   }
 
   // Sync game progress to backend every 5 minutes
@@ -284,6 +315,42 @@ export class Game {
         }
       })
     );
+
+    // Record XP gains for sync (multiplayer)
+    this._eventUnsubs.push(
+      events.on(EVENTS.SKILL_XP_GAINED, (data) => {
+        if (this.syncManager) {
+          this.syncManager.recordAction('xp_gain', data.skill, data.xp, {
+            skillName: data.skillName,
+            currentLevel: data.currentLevel
+          });
+        }
+      })
+    );
+
+    // Record combat victories for sync (multiplayer)
+    this._eventUnsubs.push(
+      events.on(EVENTS.COMBAT_ENEMY_DEFEATED, (data) => {
+        if (this.syncManager && data.xp) {
+          this.syncManager.recordAction('combat_victory', 'combat', data.xp, {
+            enemyName: data.enemy,
+            enemyHp: data.enemyHp
+          });
+        }
+      })
+    );
+
+    // Record item gains for sync (multiplayer)
+    this._eventUnsubs.push(
+      events.on(EVENTS.ITEM_GAINED, (data) => {
+        if (this.syncManager) {
+          this.syncManager.recordAction('item_gained', null, data.quantity, {
+            itemId: data.item,
+            itemName: data.icon
+          });
+        }
+      })
+    );
   }
 
   _checkSkillAchievements(data) {
@@ -353,6 +420,23 @@ export class Game {
     this.offlineProgress.game = this;
     events.emit(EVENTS.GAME_RESET, {});
     this.init();
+  }
+
+  /**
+   * Initialize multiplayer - attempt to login with existing token
+   */
+  async _initMultiplayer() {
+    if (!this.syncManager) return;
+
+    // Try to login with existing token
+    if (this.syncManager.token) {
+      const success = await this.syncManager.loginWithToken(this.syncManager.token);
+      if (success) {
+        console.log('Multiplayer enabled');
+        // Optional: perform initial sync
+        await this.syncManager.sync();
+      }
+    }
   }
 
   exportSave() {
