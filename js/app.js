@@ -9,8 +9,8 @@ let currentModal = null;
 
 // Initialize multiplayer client
 const gameClient = new NetrunnerClient({
-  apiUrl: 'http://localhost:3000',
-  socketUrl: 'ws://localhost:3000'
+  apiUrl: 'http://localhost:3001',
+  socketUrl: 'ws://localhost:3001'
 });
 
 // Make available globally

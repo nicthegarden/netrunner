@@ -1,0 +1,132 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     NETRUNNER - QUICK START GUIDE                          ║
+║               Cyberpunk Idle Game - Multiplayer Edition                     ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+🎮 PLAY NOW: http://localhost:8000
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📍 SERVER STATUS (2026-04-10)
+
+  Frontend:  http://localhost:8000   ✓ Running
+  Backend:   http://localhost:3001   ✓ Healthy
+  WebSocket: ws://localhost:3001     ✓ Connected
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎮 GETTING STARTED
+
+  1. Open browser → http://localhost:8000
+  2. Game loads automatically
+  3. Start grinding skills!
+  4. Challenge other players in PvP
+  5. Join guilds and compete
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👥 TEST PLAYERS AVAILABLE
+
+  • TestPlayer1 (Level 50, ELO 1500)
+  • TestPlayer2 (Level 45, ELO 1400)
+  • TestPlayer3 (Level 60, ELO 1600)
+
+  Challenge them in PvP to earn ELO rating!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏢 AVAILABLE GUILDS
+
+  • Netrunners United (NU) - 12 members
+  • Code Breakers (CB) - 8 members
+  • Street Legends (SL) - 15 members
+
+  Join a guild and participate in guild wars!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ FEATURES
+
+  ✓ 24 unique cyberpunk-themed skills
+  ✓ Real-time PvP duels with ELO ranking
+  ✓ Guild system with guild wars
+  ✓ Server events and leaderboards
+  ✓ Combat system with enemies and bosses
+  ✓ Crafting recipes (20+)
+  ✓ Equipment and cyberware upgrades
+  ✓ Prestige ladder for permanent bonuses
+  ✓ Offline progress (24-hour cap)
+  ✓ Auto-save every 30 seconds
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTATION
+
+  LOCAL_ACCESS.md           ← Full access guide
+  PHASE5_LOCAL_DEPLOYMENT.md ← Deployment details
+  AGENTS.md                 ← Game design & architecture
+  DEPLOYMENT_RUNBOOK.md     ← Operations guide
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🛠️ ADMIN COMMANDS
+
+  # Check services are running
+  ps aux | grep -E "node|http-server" | grep -v grep
+
+  # Stop all services
+  pkill -f "test-server.js" && pkill -f "http-server"
+
+  # Restart backend
+  cd /home/edve/netrunner/backend && PORT=3001 node test-server.js &
+
+  # Restart frontend
+  cd /home/edve/netrunner && http-server -p 8000 --gzip &
+
+  # Test backend
+  curl http://localhost:3001/api/players/leaderboard
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 SYSTEM INFO
+
+  Node.js:     v25.9.0
+  Platform:    Linux (x86_64)
+  Uptime:      1+ hours
+  Memory:      ~150MB (backend + frontend)
+  Latency:     <50ms (local)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❓ TROUBLESHOOTING
+
+  Can't connect to backend?
+    → curl http://localhost:3001/health
+    → Check port 3001 is not blocked
+
+  Game won't load?
+    → Clear browser cache (Ctrl+Shift+Del)
+    → Check http://localhost:8000 loads
+    → Open browser console (F12) for errors
+
+  Port already in use?
+    → pkill -f "test-server.js"
+    → pkill -f "http-server"
+    → Wait 1-2 seconds, restart
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 MORE INFO
+
+  Frontend URL:    http://localhost:8000
+  Backend API:     http://localhost:3001
+  API Status:      http://localhost:3001/api/status
+  PvP Leaderboard: http://localhost:3001/api/players/leaderboard
+  Guilds:          http://localhost:3001/api/guilds
+  Events:          http://localhost:3001/api/events
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ready to play? Open http://localhost:8000 now! 🎮
+
+For full documentation, see: /home/edve/netrunner/LOCAL_ACCESS.md
+

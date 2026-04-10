@@ -6,7 +6,6 @@ WORKDIR /app
 COPY index.html ./
 COPY js/ ./js/
 COPY css/ ./css/
-COPY assets/ ./assets/ 2>/dev/null || true
 
 # Install http-server globally
 RUN npm install -g http-server@14
