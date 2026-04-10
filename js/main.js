@@ -70,10 +70,47 @@ export class Game {
     // Start game loop and auto-save
     this.gameLoop.start();
     this.saveManager.startAutoSave();
+    
+    // Start progress sync to backend (every 5 minutes)
+    this.startProgressSync();
+    
     events.emit(EVENTS.GAME_LOADED, {
       player: this.player,
       skills: this.skillManager.getAllSkills(),
     });
+  }
+
+  // Sync game progress to backend every 5 minutes
+  startProgressSync() {
+    setInterval(async () => {
+      if (window.gameClient?.isAuthenticated?.()) {
+        try {
+          await window.gameClient.sync({
+            skills: Object.fromEntries(
+              Object.entries(this.skillManager.skills || {}).map(([key, skill]) => [
+                key,
+                { level: skill.level, xp: skill.xp }
+              ])
+            ),
+            inventory: {
+              items: this.inventory.items || [],
+              slots: this.inventory.slots || 100
+            },
+            economy: {
+              eurodollar: this.economy?.currency || 0,
+              totalEarned: this.economy?.totalEarned || 0
+            },
+            playtime: this.player?.playtime || 0,
+            prestige: {
+              level: this.prestige?.level || 0,
+              totalResets: this.prestige?.totalResets || 0
+            }
+          });
+        } catch (error) {
+          console.error('Sync error:', error);
+        }
+      }
+    }, 5 * 60 * 1000); // Every 5 minutes
   }
 
   _wireEvents() {

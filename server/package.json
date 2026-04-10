@@ -1,0 +1,27 @@
+{
+  "name": "netrunner-multiplayer",
+  "version": "1.0.0",
+  "description": "Multiplayer backend for NETRUNNER cyberpunk idle game",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "server": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "netrunner",
+    "idle-game",
+    "multiplayer",
+    "cyberpunk"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2",
+    "ws": "^8.14.2",
+    "uuid": "^9.0.0"
+  }
+}

@@ -1,9 +1,20 @@
 import { initGame, getGame } from './main.js';
 import { UI } from './ui/main.js';
 import { ACTIVITIES, BACKGROUND_HACK_SKILLS } from './data/skillData.js';
+import { NetrunnerClient } from './netrunnerClient.js';
+import { MultiplayerManager } from './multiplayer.js';
 
 let ui;
 let currentModal = null;
+
+// Initialize multiplayer client
+const gameClient = new NetrunnerClient({
+  apiUrl: 'http://localhost:3000',
+  socketUrl: 'ws://localhost:3000'
+});
+
+// Make available globally
+window.gameClient = gameClient;
 
 // ==========================================
 // Modal Dialog System
@@ -370,6 +381,14 @@ window.addEventListener('load', () => {
   const game = initGame();
   ui = new UI();
   ui.init();
+  
+  // Wire game client to game instance
+  game.gameClient = gameClient;
+  window.gameInstance = game;
+  
+  // Initialize multiplayer manager
+  const multiplayerManager = new MultiplayerManager(gameClient, game);
+  window.multiplayerManager = multiplayerManager;
 });
 
 // ==========================================

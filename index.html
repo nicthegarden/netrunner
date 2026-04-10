@@ -90,6 +90,17 @@
         </div>
       </div>
 
+      <!-- MULTIPLAYER SECTION -->
+      <div class="nav-section">
+        <h3>MULTIPLAYER</h3>
+        <div class="nav-skills">
+          <button class="nav-btn nav-special" data-view="pvp">⚔️ PvP Duels</button>
+          <button class="nav-btn nav-special" data-view="guilds">🏰 Guilds</button>
+          <button class="nav-btn nav-special" data-view="events">📅 Events</button>
+          <button class="nav-btn nav-special" data-view="leaderboards">🏆 Leaderboards</button>
+        </div>
+      </div>
+
       <!-- Utility nav buttons -->
       <div class="nav-section nav-utility">
         <button class="nav-btn nav-special" data-view="inventory">INVENTORY</button>
@@ -183,13 +194,62 @@
         </div>
 
         <!-- Changelog View -->
-        <div id="view-changelog" class="view-content">
-          <h2 class="view-title">CHANGELOG</h2>
-          <div id="changelog-container"></div>
-        </div>
-      </div>
+         <div id="view-changelog" class="view-content">
+           <h2 class="view-title">CHANGELOG</h2>
+           <div id="changelog-container"></div>
+         </div>
 
-      <!-- Bottom Tab Bar (Mobile) -->
+         <!-- PvP Duels View -->
+         <div id="view-pvp" class="view-content">
+           <h2 class="view-title">⚔️ PvP DUELS</h2>
+           <div id="pvp-container">
+             <h3>Available Opponents</h3>
+             <div id="pvp-opponents"></div>
+             <h3>Your PvP Stats</h3>
+             <div id="pvp-stats"></div>
+             <h3>Recent Duels</h3>
+             <div id="pvp-history"></div>
+           </div>
+         </div>
+
+         <!-- Guilds View -->
+         <div id="view-guilds" class="view-content">
+           <h2 class="view-title">🏰 GUILDS</h2>
+           <div id="guilds-container">
+             <h3>Your Guild</h3>
+             <div id="my-guild"></div>
+             <h3>Available Guilds</h3>
+             <div id="available-guilds"></div>
+             <button class="btn-primary" id="btn-create-guild">Create New Guild</button>
+           </div>
+         </div>
+
+         <!-- Events View -->
+         <div id="view-events" class="view-content">
+           <h2 class="view-title">📅 EVENTS</h2>
+           <div id="events-container">
+             <h3>Active Events</h3>
+             <div id="active-events"></div>
+             <h3>Guild Wars</h3>
+             <div id="guild-wars"></div>
+           </div>
+         </div>
+
+         <!-- Leaderboards View -->
+         <div id="view-leaderboards" class="view-content">
+           <h2 class="view-title">🏆 LEADERBOARDS</h2>
+           <div id="leaderboards-container">
+             <div id="leaderboards-tabs">
+               <button class="tab-btn" data-leaderboard="xp">XP</button>
+               <button class="tab-btn" data-leaderboard="elo">PvP (ELO)</button>
+               <button class="tab-btn" data-leaderboard="wealth">Wealth</button>
+             </div>
+             <div id="leaderboard-list"></div>
+           </div>
+         </div>
+       </div>
+
+       <!-- Bottom Tab Bar (Mobile) -->
       <div id="bottom-tabs" class="bottom-tabs">
         <button class="tab-btn" data-view="skills">Skills</button>
         <button class="tab-btn" data-view="inventory">Inv</button>
@@ -207,6 +267,10 @@
   <div id="notifications"></div>
 
   <!-- Scripts -->
+  <!-- Multiplayer SDK -->
+  <script type="module" src="js/netrunnerClient.js"></script>
+
+  <!-- App Bootstrap -->
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
