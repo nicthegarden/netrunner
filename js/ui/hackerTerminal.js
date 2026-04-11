@@ -613,6 +613,28 @@ export class HackerTerminal {
     this._applyVisibility();
   }
 
+  writeNotification(message, type = 'info') {
+    if (!this.outputEl) return false;
+
+    const prefixMap = {
+      info: '[INFO]',
+      warning: '[WARN]',
+      error: '[ALERT]',
+      success: '[OK]',
+      victory: '[WIN]',
+      levelup: '[LVL]'
+    };
+
+    const prefix = prefixMap[type] || '[SYS]';
+    const existing = this.outputEl.textContent || '';
+    const entry = `${prefix} ${message}`;
+    const next = `${existing ? `${existing}\n` : ''}${entry}`;
+    const lines = next.split('\n').slice(-18);
+    this.outputEl.textContent = lines.join('\n');
+    this._applyVisibility();
+    return true;
+  }
+
   /**
    * Enqueue the next code snippet + status line for the current skill.
    */

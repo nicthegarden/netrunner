@@ -197,17 +197,97 @@ export const CRAFT_RECIPES = {
      currencyCost: 6000,
    },
 
-   wealth_accumulator_craft: {
-     name: 'Install Wealth Accumulator',
-     category: 'cyberware',
-     level: 75,
-     requiredSkill: 'corpo_infiltration',
+    wealth_accumulator_craft: {
+      name: 'Install Wealth Accumulator',
+      category: 'cyberware',
+      level: 75,
+      requiredSkill: 'corpo_infiltration',
      inputs: { net_artifact: 3, biometric_scanner: 8, circuit_board: 12, daemon_code: 5 },
-     outputs: { wealth_accumulator: 1 },
-     currencyCost: 6500,
-   },
+      outputs: { wealth_accumulator: 1 },
+      currencyCost: 6500,
+    },
 
-   // ===== LEGENDARY CRAFTING RECIPES =====
+    neuroclock_jack_craft: {
+      name: 'Assemble Neuroclock Jack',
+      category: 'cyberware',
+      level: 72,
+      requiredSkill: 'cyberware_installation',
+      inputs: { neural_implant: 6, daemon_code: 8, circuit_board: 10, net_artifact: 2 },
+      outputs: { neuroclock_jack: 1 },
+      currencyCost: 7200,
+    },
+
+    spectral_sniffer_craft: {
+      name: 'Build Spectral Packet Sniffer',
+      category: 'cyberware',
+      level: 68,
+      requiredSkill: 'decryption',
+      inputs: { encrypted_data: 18, circuit_board: 8, daemon_code: 6, biometric_scanner: 2 },
+      outputs: { spectral_sniffer: 1 },
+      currencyCost: 6800,
+    },
+
+    quicktrace_graft_craft: {
+      name: 'Install Quicktrace Graft',
+      category: 'cyberware',
+      level: 70,
+      requiredSkill: 'neural_surfing',
+      inputs: { neural_implant: 4, net_artifact: 2, circuit_board: 10, ice_fragment: 8 },
+      outputs: { quicktrace_graft: 1 },
+      currencyCost: 7000,
+    },
+
+    zero_day_suite_craft: {
+      name: 'Compile Zero-Day Suite',
+      category: 'cyberware',
+      level: 92,
+      requiredSkill: 'intrusion',
+      inputs: { neuroclock_jack: 1, blackwall_router: 1, daemon_code: 16, net_artifact: 8, neural_implant: 8 },
+      outputs: { zero_day_suite: 1 },
+      currencyCost: 24000,
+    },
+
+    ghostwalk_cloak_craft: {
+      name: 'Weave Ghostwalk Cloak',
+      category: 'armor',
+      level: 58,
+      requiredSkill: 'stealth',
+      inputs: { kevlar_bodysuit: 1, stolen_intel: 6, synthetic_muscle: 4, circuit_board: 4 },
+      outputs: { ghostwalk_cloak: 1 },
+      currencyCost: 3200,
+    },
+
+    blackwall_router_craft: {
+      name: 'Forge Blackwall Router Spine',
+      category: 'cyberware',
+      level: 78,
+      requiredSkill: 'deep_dive',
+      inputs: { daemon_code: 12, net_artifact: 5, neural_implant: 4, circuit_board: 8 },
+      outputs: { blackwall_router: 1 },
+      currencyCost: 8800,
+    },
+
+    corpo_breaker_craft: {
+      name: 'Forge Corpo Breaker Shotgun',
+      category: 'weapon',
+      level: 66,
+      requiredSkill: 'weapon_modding',
+      inputs: { rifle: 1, chrome_scrap: 14, synthetic_muscle: 6, circuit_board: 6 },
+      outputs: { corpo_breaker: 1 },
+      currencyCost: 5200,
+    },
+
+    daemon_forge_craft: {
+      name: 'Compile Daemon Forge Core',
+      category: 'cyberware',
+      level: 74,
+      requiredSkill: 'daemon_coding',
+      inputs: { daemon_code: 14, neural_implant: 4, net_artifact: 3, circuit_board: 6 },
+      outputs: { daemon_forge: 1 },
+      currencyCost: 7600,
+    },
+
+    // ===== LEGENDARY CRAFTING RECIPES =====
 
    plasma_rifle_craft: {
      name: 'Forge Plasma Rifle',

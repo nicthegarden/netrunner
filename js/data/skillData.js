@@ -269,6 +269,9 @@ export const ITEMS = {
     // New handcrafted cyberpunk grind/combat gear
     GHOSTWALK_CLOAK: { id: 'ghostwalk_cloak', name: 'Ghostwalk Cloak', type: 'armor', icon: '🫥', defense: 7, speedBoost: 0.12, stackable: false, value: 2400, rarity: 'rare', linkedSkill: 'stealth', description: '+7 defense • +12% action speed • linked to stealth' },
     BLACKWALL_ROUTER: { id: 'blackwall_router', name: 'Blackwall Router Spine', type: 'cyberware', icon: '📡', defense: 4, xpBoost: 0.12, parallelHacking: true, stackable: false, value: 6200, rarity: 'epic', linkedSkill: 'deep_dive', description: '+4 defense • +12% XP gain • enables parallel grinding • linked to deep dive' },
+    SPECTRAL_SNIFFER: { id: 'spectral_sniffer', name: 'Spectral Packet Sniffer', type: 'cyberware', icon: '📶', defense: 2, speedBoost: 0.16, lootBoost: 0.12, stackable: false, value: 6800, rarity: 'epic', linkedSkill: 'decryption', description: '+16% action speed • +12% item drops • +2 defense • tuned for decryption runs' },
+    QUICKTRACE_GRAFT: { id: 'quicktrace_graft', name: 'Quicktrace Graft', type: 'cyberware', icon: '🛰️', defense: 3, speedBoost: 0.18, xpBoost: 0.06, stackable: false, value: 7200, rarity: 'epic', linkedSkill: 'neural_surfing', description: '+18% action speed • +6% XP gain • +3 defense • tuned for neural surfing' },
+    ZERO_DAY_SUITE: { id: 'zero_day_suite', name: 'Zero-Day Suite', type: 'cyberware', icon: '🧩', defense: 5, damage: 2, speedBoost: 0.22, xpBoost: 0.1, parallelHacking: true, stackable: false, value: 9800, rarity: 'legendary', linkedSkill: 'intrusion', description: '+22% action speed • +10% XP • +2 damage • +5 defense • parallel hacking • tuned for hacking runs' },
     STREETPHANTOM_OS: { id: 'streetphantom_os', name: 'Streetphantom OS', type: 'cyberware', icon: '🌆', damage: 4, speedBoost: 0.1, currencyBoost: 0.12, stackable: false, value: 5400, rarity: 'epic', linkedSkill: 'smuggling', description: '+4 damage • +10% action speed • +12% currency gain • linked to smuggling' },
     CORPO_BREAKER: { id: 'corpo_breaker', name: 'Corpo Breaker Shotgun', type: 'weapon', icon: '💥', damage: 18, stackable: false, value: 4800, rarity: 'epic', linkedSkill: 'combat', description: '+18 damage • linked to combat' },
     ICEPICK_ARRAY: { id: 'icepick_array', name: 'ICEpick Array', type: 'cyberware', icon: '🧊', damage: 6, lootBoost: 0.14, stackable: false, value: 5600, rarity: 'epic', linkedSkill: 'ice_breaking', description: '+6 damage • +14% item drops • linked to ice breaking' },
@@ -364,12 +367,12 @@ export const ENEMIES = {
   DIGITAL_PHANTOM: {
     id: 'digital_phantom', name: 'Digital Phantom (Boss)',
     hp: 250, damage: 22, xpReward: 2800, isBoss: true, evasion: 0.20,
-    loot: { 'daemon_code': { min: 15, max: 30 }, 'net_artifact': { min: 10, max: 15 }, 'eurodollar': { min: 7000, max: 18000 } },
+    loot: { 'daemon_code': { min: 15, max: 30 }, 'net_artifact': { min: 10, max: 15 }, 'spectral_sniffer': { min: 0, max: 1 }, 'eurodollar': { min: 7000, max: 18000 } },
   },
   CHROME_WRAITH: {
     id: 'chrome_wraith', name: 'Chrome Wraith (Boss)',
     hp: 400, damage: 40, xpReward: 4000, isBoss: true, phase2_trigger: 0.5, lifeSteal: 0.15,
-    loot: { 'neural_implant': { min: 10, max: 20 }, 'chrome_scrap': { min: 25, max: 50 }, 'net_artifact': { min: 12, max: 20 }, 'eurodollar': { min: 15000, max: 40000 } },
+    loot: { 'neural_implant': { min: 10, max: 20 }, 'chrome_scrap': { min: 25, max: 50 }, 'chrome_harvester': { min: 0, max: 1 }, 'net_artifact': { min: 12, max: 20 }, 'eurodollar': { min: 15000, max: 40000 } },
   },
 };
 
@@ -393,11 +396,11 @@ export const ACTIVITIES = {
     },
     {
       id: 'elite_hack', name: 'Crack Arasaka Mainframe', level: 70, duration: 30, xp: 400, masteryXp: 100,
-      rewards: { items: { 'data_shard': { min: 10, max: 25 }, 'neural_implant': { min: 1, max: 2 } }, currency: { min: 500, max: 2000 } },
+      rewards: { items: { 'data_shard': { min: 10, max: 25 }, 'neural_implant': { min: 1, max: 2 }, 'neuroclock_jack': { min: 0, max: 1 } }, currency: { min: 500, max: 2000 } },
     },
     {
       id: 'legendary_hack', name: 'Breach Netrunner Consciousness', level: 90, duration: 40, xp: 800, masteryXp: 200,
-      rewards: { items: { 'data_shard': { min: 20, max: 40 }, 'net_artifact': { min: 1, max: 3 }, 'daemon_code': { min: 2, max: 5 } }, currency: { min: 2000, max: 8000 } },
+      rewards: { items: { 'data_shard': { min: 20, max: 40 }, 'net_artifact': { min: 1, max: 3 }, 'daemon_code': { min: 2, max: 5 }, 'zero_day_suite': { min: 0, max: 1 } }, currency: { min: 2000, max: 8000 } },
     },
   ],
 
@@ -414,10 +417,10 @@ export const ACTIVITIES = {
        id: 'hard_decrypt', name: 'Break Quantum Encryption', level: 50, duration: 25, xp: 180, masteryXp: 60,
        rewards: { items: { 'encrypted_data': { min: 5, max: 10 }, 'stolen_intel': { min: 2, max: 4 } }, currency: { min: 200, max: 700 } },
      },
-     {
-       id: 'elite_decrypt', name: 'Decode Arasaka Protocol', level: 70, duration: 35, xp: 420, masteryXp: 120,
-       rewards: { items: { 'encrypted_data': { min: 10, max: 20 }, 'stolen_intel': { min: 3, max: 6 }, 'neural_implant': { min: 1, max: 2 } }, currency: { min: 600, max: 2500 } },
-     },
+    {
+      id: 'elite_decrypt', name: 'Decode Arasaka Protocol', level: 70, duration: 35, xp: 420, masteryXp: 120,
+      rewards: { items: { 'encrypted_data': { min: 10, max: 20 }, 'stolen_intel': { min: 3, max: 6 }, 'neural_implant': { min: 1, max: 2 }, 'spectral_sniffer': { min: 0, max: 1 } }, currency: { min: 600, max: 2500 } },
+    },
      {
        id: 'legendary_decrypt', name: 'Crack Megacorp AI Mind', level: 90, duration: 45, xp: 900, masteryXp: 250,
        rewards: { items: { 'encrypted_data': { min: 20, max: 40 }, 'net_artifact': { min: 1, max: 3 }, 'daemon_code': { min: 3, max: 6 } }, currency: { min: 3000, max: 10000 } },
@@ -456,10 +459,10 @@ export const ACTIVITIES = {
        id: 'complex_daemon', name: 'Code Complex Daemon', level: 30, duration: 18, xp: 70, masteryXp: 25,
        rewards: { items: { 'daemon_code': { min: 2, max: 5 } }, currency: { min: 80, max: 300 } },
      },
-     {
-       id: 'ai_daemon', name: 'Code AI-Enhanced Daemon', level: 60, duration: 30, xp: 250, masteryXp: 80,
-       rewards: { items: { 'daemon_code': { min: 4, max: 10 }, 'net_artifact': { min: 0, max: 1 } }, currency: { min: 250, max: 1000 } },
-     },
+    {
+      id: 'ai_daemon', name: 'Code AI-Enhanced Daemon', level: 60, duration: 30, xp: 250, masteryXp: 80,
+      rewards: { items: { 'daemon_code': { min: 4, max: 10 }, 'net_artifact': { min: 0, max: 1 }, 'daemon_forge': { min: 0, max: 1 } }, currency: { min: 250, max: 1000 } },
+    },
      {
        id: 'elite_daemon', name: 'Design Netrunner-Grade Daemon', level: 70, duration: 45, xp: 520, masteryXp: 170,
        rewards: { items: { 'daemon_code': { min: 10, max: 20 }, 'net_artifact': { min: 1, max: 2 } }, currency: { min: 1000, max: 3500 } },
@@ -484,10 +487,10 @@ export const ACTIVITIES = {
        id: 'deep_net_dive', name: 'Deep NET Expedition', level: 50, duration: 30, xp: 200, masteryXp: 65,
        rewards: { items: { 'net_artifact': { min: 1, max: 3 }, 'daemon_code': { min: 2, max: 5 } }, currency: { min: 200, max: 800 } },
      },
-     {
-       id: 'abyss_dive', name: 'Abyss Delve (Netrunner Zone)', level: 70, duration: 45, xp: 440, masteryXp: 150,
-       rewards: { items: { 'net_artifact': { min: 3, max: 7 }, 'daemon_code': { min: 5, max: 12 } }, currency: { min: 800, max: 3000 } },
-     },
+    {
+      id: 'abyss_dive', name: 'Abyss Delve (Netrunner Zone)', level: 70, duration: 45, xp: 440, masteryXp: 150,
+      rewards: { items: { 'net_artifact': { min: 3, max: 7 }, 'daemon_code': { min: 5, max: 12 }, 'blackwall_router': { min: 0, max: 1 } }, currency: { min: 800, max: 3000 } },
+    },
      {
        id: 'void_dive', name: 'Void Abyss Expedition', level: 90, duration: 60, xp: 950, masteryXp: 320,
        rewards: { items: { 'net_artifact': { min: 6, max: 12 }, 'daemon_code': { min: 10, max: 20 } }, currency: { min: 3500, max: 12000 } },
@@ -554,10 +557,10 @@ export const ACTIVITIES = {
        id: 'deep_surf', name: 'Deep Layer Surfing', level: 40, duration: 15, xp: 120, masteryXp: 40,
        rewards: { items: { 'net_artifact': { min: 0, max: 1 }, 'data_shard': { min: 5, max: 10 } }, currency: { min: 100, max: 400 } },
      },
-     {
-       id: 'phantom_surf', name: 'Phantom Speed Run', level: 70, duration: 25, xp: 300, masteryXp: 110,
-       rewards: { items: { 'net_artifact': { min: 1, max: 2 }, 'daemon_code': { min: 2, max: 5 } }, currency: { min: 500, max: 2000 } },
-     },
+    {
+      id: 'phantom_surf', name: 'Phantom Speed Run', level: 70, duration: 25, xp: 300, masteryXp: 110,
+      rewards: { items: { 'net_artifact': { min: 1, max: 2 }, 'daemon_code': { min: 2, max: 5 }, 'quicktrace_graft': { min: 0, max: 1 } }, currency: { min: 500, max: 2000 } },
+    },
      {
        id: 'void_surf', name: 'Void Hyperspace Traverse', level: 90, duration: 35, xp: 700, masteryXp: 250,
        rewards: { items: { 'net_artifact': { min: 2, max: 5 }, 'daemon_code': { min: 5, max: 10 } }, currency: { min: 2500, max: 8000 } },
@@ -608,10 +611,10 @@ export const ACTIVITIES = {
        id: 'ghost_run', name: 'Ghost Run (Zero Trace)', level: 50, duration: 25, xp: 180, masteryXp: 60,
        rewards: { items: { 'stolen_intel': { min: 3, max: 7 }, 'biometric_scanner': { min: 0, max: 1 } }, currency: { min: 300, max: 900 } },
      },
-     {
-       id: 'phantom_infiltration', name: 'Phantom Corpo Infiltration', level: 70, duration: 35, xp: 400, masteryXp: 140,
-       rewards: { items: { 'stolen_intel': { min: 7, max: 15 }, 'biometric_scanner': { min: 1, max: 3 } }, currency: { min: 1000, max: 3500 } },
-     },
+    {
+      id: 'phantom_infiltration', name: 'Phantom Corpo Infiltration', level: 70, duration: 35, xp: 400, masteryXp: 140,
+      rewards: { items: { 'stolen_intel': { min: 7, max: 15 }, 'biometric_scanner': { min: 1, max: 3 }, 'ghostwalk_cloak': { min: 0, max: 1 } }, currency: { min: 1000, max: 3500 } },
+    },
      {
        id: 'shadow_legend', name: 'Shadow Protocol Breach', level: 90, duration: 50, xp: 850, masteryXp: 300,
        rewards: { items: { 'stolen_intel': { min: 15, max: 30 }, 'biometric_scanner': { min: 2, max: 5 }, 'net_artifact': { min: 1, max: 2 } }, currency: { min: 4000, max: 12000 } },
@@ -658,10 +661,10 @@ export const ACTIVITIES = {
        id: 'mega_run', name: 'Megacorp Black Market Operation', level: 70, duration: 45, xp: 450, masteryXp: 160,
        rewards: { items: { 'contraband': { min: 12, max: 25 } }, currency: { min: 1200, max: 4000 } },
      },
-     {
-       id: 'legendary_run', name: 'Continental Contraband Network', level: 90, duration: 60, xp: 1000, masteryXp: 350,
-       rewards: { items: { 'contraband': { min: 25, max: 50 } }, currency: { min: 5000, max: 15000 } },
-     },
+    {
+      id: 'legendary_run', name: 'Continental Contraband Network', level: 90, duration: 60, xp: 1000, masteryXp: 350,
+      rewards: { items: { 'contraband': { min: 25, max: 50 }, 'streetphantom_os': { min: 0, max: 1 }, 'nightmarket_case': { min: 1, max: 2 } }, currency: { min: 5000, max: 15000 } },
+    },
    ],
 
   // ---- TECH ----
@@ -979,6 +982,9 @@ export const SHOP_ITEMS = [
    { id: 'neuroclock_jack', name: 'Neuroclock Jack', icon: '🧠', cost: 9200, category: 'cyberware', tier: 4, description: '+20% action speed, +8% XP, +4 defense, parallel hacking for hacking grinds', costPerformance: 'grind-booster', linkedSkill: 'intrusion', requiredLevel: 30 },
    { id: 'ghostwalk_cloak', name: 'Ghostwalk Cloak', icon: '🫥', cost: 4200, category: 'armor', tier: 3, description: '+7 defense, +12% action speed for stealth runs', costPerformance: 'grind-booster', linkedSkill: 'stealth', requiredLevel: 24 },
    { id: 'blackwall_router', name: 'Blackwall Router Spine', icon: '📡', cost: 7600, category: 'cyberware', tier: 4, description: '+12% XP, +4 defense, parallel grinding for deep dive', costPerformance: 'grind-booster', linkedSkill: 'deep_dive', requiredLevel: 28 },
+   { id: 'spectral_sniffer', name: 'Spectral Packet Sniffer', icon: '📶', cost: 7800, category: 'cyberware', tier: 4, description: '+16% action speed and +12% drops for decryption', costPerformance: 'grind-booster', linkedSkill: 'decryption', requiredLevel: 26 },
+   { id: 'quicktrace_graft', name: 'Quicktrace Graft', icon: '🛰️', cost: 7900, category: 'cyberware', tier: 4, description: '+18% action speed and +6% XP for neural surfing', costPerformance: 'grind-booster', linkedSkill: 'neural_surfing', requiredLevel: 26 },
+   { id: 'zero_day_suite', name: 'Zero-Day Suite', icon: '🧩', cost: 11800, category: 'cyberware', tier: 4, description: '+22% action speed, +10% XP, parallel hacking for intrusion', costPerformance: 'exotic', linkedSkill: 'intrusion', requiredLevel: 40 },
    { id: 'streetphantom_os', name: 'Streetphantom OS', icon: '🌆', cost: 6800, category: 'cyberware', tier: 4, description: '+10% speed, +12% currency, +4 damage for smuggling', costPerformance: 'premium', linkedSkill: 'smuggling', requiredLevel: 26 },
    { id: 'corpo_breaker', name: 'Corpo Breaker Shotgun', icon: '💥', cost: 5900, category: 'weapon', tier: 4, description: '+18 damage for heavy street combat', costPerformance: 'high-value', linkedSkill: 'combat', requiredLevel: 25 },
    { id: 'icepick_array', name: 'ICEpick Array', icon: '🧊', cost: 6400, category: 'cyberware', tier: 4, description: '+6 damage and +14% drops while breaking ICE', costPerformance: 'premium', linkedSkill: 'ice_breaking', requiredLevel: 27 },

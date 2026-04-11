@@ -83,6 +83,10 @@ export class UI {
   }
 
   notify(message, type = 'info') {
+    if (this.hackerTerminal?.writeNotification?.(message, type)) {
+      return;
+    }
+
     const notifEl = document.getElementById('notifications');
     if (!notifEl) return;
     const div = document.createElement('div');
@@ -1101,8 +1105,10 @@ export class UI {
           { type: 'balance', text: 'Shared Grind Load Debuff — Every extra simultaneous grind lowers payout efficiency for all active grinds, now tuned to a softer progression-friendly curve: 82% at 2 grinds, 68% at 3 grinds, and 58% at 4 grinds.' },
           { type: 'feature', text: 'Linked Item Catalog — The game now supports a massive generated catalog of 1000+ linked items with rarity, pricing, linked skills, and perk metadata.' },
           { type: 'feature', text: 'Handcrafted Cyberpunk Gear — Added curated new weapons, armor, cyberware, and consumables like Neuroclock Jack, Blackwall Router Spine, Ghostwalk Cloak, Corpo Breaker, and more to support faster grinds, stronger combat, and richer skill-themed builds.' },
+          { type: 'feature', text: 'World Drops & Recipes — Curated gear now appears from themed late-game activities, boss drops, and new crafting recipes so progression can target specific builds instead of relying only on the market.' },
           { type: 'feature', text: 'Inventory Perk Cards — Inventory entries now display perk text and linked-skill context so loot is readable instead of just being a list of names.' },
           { type: 'feature', text: 'Rotating Store Rollout — The shop now surfaces a curated slice of the larger item pool based on your progression, current skill focus, and available cash, with timed market rotation, category filters, and pagination.' },
+          { type: 'feature', text: 'Terminal Feed Notifications — Gameplay notifications now stream into the NETRUNNER terminal instead of stacking in the top-right corner, keeping the main screen cleaner while preserving the cyberpunk console feel.' },
           { type: 'feature', text: 'Admin Access Controls — Admin user details now include password reset, session revocation, email/admin access management, and recent login session visibility.' },
         ],
       },
