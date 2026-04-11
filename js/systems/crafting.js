@@ -212,9 +212,9 @@ export const CRAFT_RECIPES = {
       category: 'cyberware',
       level: 72,
       requiredSkill: 'cyberware_installation',
-      inputs: { neural_implant: 6, daemon_code: 8, circuit_board: 10, net_artifact: 2 },
+      inputs: { neural_implant: 5, daemon_code: 6, circuit_board: 8, net_artifact: 2 },
       outputs: { neuroclock_jack: 1 },
-      currencyCost: 7200,
+      currencyCost: 6400,
     },
 
     spectral_sniffer_craft: {
@@ -222,9 +222,9 @@ export const CRAFT_RECIPES = {
       category: 'cyberware',
       level: 68,
       requiredSkill: 'decryption',
-      inputs: { encrypted_data: 18, circuit_board: 8, daemon_code: 6, biometric_scanner: 2 },
+      inputs: { encrypted_data: 14, circuit_board: 6, daemon_code: 5, biometric_scanner: 2 },
       outputs: { spectral_sniffer: 1 },
-      currencyCost: 6800,
+      currencyCost: 5900,
     },
 
     quicktrace_graft_craft: {
@@ -232,9 +232,9 @@ export const CRAFT_RECIPES = {
       category: 'cyberware',
       level: 70,
       requiredSkill: 'neural_surfing',
-      inputs: { neural_implant: 4, net_artifact: 2, circuit_board: 10, ice_fragment: 8 },
+      inputs: { neural_implant: 4, net_artifact: 2, circuit_board: 8, ice_fragment: 6 },
       outputs: { quicktrace_graft: 1 },
-      currencyCost: 7000,
+      currencyCost: 6100,
     },
 
     zero_day_suite_craft: {
@@ -242,9 +242,9 @@ export const CRAFT_RECIPES = {
       category: 'cyberware',
       level: 92,
       requiredSkill: 'intrusion',
-      inputs: { neuroclock_jack: 1, blackwall_router: 1, daemon_code: 16, net_artifact: 8, neural_implant: 8 },
+      inputs: { neuroclock_jack: 1, blackwall_router: 1, daemon_code: 14, net_artifact: 7, neural_implant: 7 },
       outputs: { zero_day_suite: 1 },
-      currencyCost: 24000,
+      currencyCost: 21000,
     },
 
     ghostwalk_cloak_craft: {
@@ -262,9 +262,9 @@ export const CRAFT_RECIPES = {
       category: 'cyberware',
       level: 78,
       requiredSkill: 'deep_dive',
-      inputs: { daemon_code: 12, net_artifact: 5, neural_implant: 4, circuit_board: 8 },
+      inputs: { daemon_code: 10, net_artifact: 4, neural_implant: 4, circuit_board: 6 },
       outputs: { blackwall_router: 1 },
-      currencyCost: 8800,
+      currencyCost: 7600,
     },
 
     corpo_breaker_craft: {

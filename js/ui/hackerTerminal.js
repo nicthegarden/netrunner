@@ -626,10 +626,16 @@ export class HackerTerminal {
     };
 
     const prefix = prefixMap[type] || '[SYS]';
+    const timestamp = new Date().toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
     const existing = this.outputEl.textContent || '';
-    const entry = `${prefix} ${message}`;
+    const entry = `${timestamp} ${prefix} ${message}`;
     const next = `${existing ? `${existing}\n` : ''}${entry}`;
-    const lines = next.split('\n').slice(-18);
+    const lines = next.split('\n').slice(-24);
     this.outputEl.textContent = lines.join('\n');
     this._applyVisibility();
     return true;
