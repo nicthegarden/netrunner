@@ -503,15 +503,9 @@ export class MultiplayerManager {
   }
 
   showNotification(message) {
-    // Use existing game notification system
-    const notificationContainer = document.getElementById('notifications');
-    if (notificationContainer) {
-      const notification = document.createElement('div');
-      notification.className = 'notification';
-      notification.textContent = message;
-      notificationContainer.appendChild(notification);
-
-      setTimeout(() => notification.remove(), 3000);
+    const ui = window.ui;
+    if (ui?.notify) {
+      ui.notify(message, 'info');
     }
   }
 }

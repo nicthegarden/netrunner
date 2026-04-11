@@ -291,10 +291,17 @@
         <div class="hacker-terminal-header">
           <span class="hacker-terminal-title"><span class="hacker-terminal-dot"></span> NETRUNNER TERMINAL</span>
           <span class="hacker-terminal-skill" id="hacker-terminal-skill"></span>
+          <div class="hacker-terminal-filters" id="hacker-terminal-filters">
+            <button class="terminal-filter active" data-terminal-filter="all">All</button>
+            <button class="terminal-filter" data-terminal-filter="loot">Loot</button>
+            <button class="terminal-filter" data-terminal-filter="xp">XP</button>
+            <button class="terminal-filter" data-terminal-filter="combat">Combat</button>
+            <button class="terminal-filter" data-terminal-filter="system">System</button>
+          </div>
           <button class="hacker-terminal-toggle" id="hacker-terminal-toggle" title="Hide terminal">Hide</button>
         </div>
         <div class="hacker-terminal-body" id="hacker-terminal-body">
-          <pre class="hacker-terminal-output" id="hacker-terminal-output"></pre>
+          <div class="hacker-terminal-output" id="hacker-terminal-output"></div>
           <div class="hacker-terminal-cursor"></div>
         </div>
       </div>

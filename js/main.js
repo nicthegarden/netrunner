@@ -345,8 +345,9 @@ export class Game {
       events.on(EVENTS.ITEM_GAINED, (data) => {
         if (this.syncManager) {
           this.syncManager.recordAction('item_gained', null, data.quantity, {
-            itemId: data.item,
-            itemName: data.icon
+            itemId: data.itemId || data.item,
+            itemName: data.itemName || data.item,
+            itemIcon: data.icon
           });
         }
       })

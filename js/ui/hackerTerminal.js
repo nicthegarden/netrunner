@@ -457,6 +457,8 @@ const STATUS_LINES = {
 // How many characters to type per update tick (called every ~80ms)
 const BASE_CHARS_PER_TICK = 3;
 const MAX_BUFFER_LINES = 200; // Trim buffer to prevent DOM bloat
+const MAX_NOTIFICATION_LINES = 60;
+const MERGEABLE_NOTIFICATION_WINDOW_MS = 1500;
 
 export class HackerTerminal {
   constructor() {
@@ -465,11 +467,14 @@ export class HackerTerminal {
     this.containerEl = null;
     this.skillLabelEl = null;
     this.toggleBtn = null;
+    this.filterEls = [];
 
     this.isActive = false;
     this.isMinimized = false;
     this.isHidden = false;
     this.currentSkillId = null;
+    this.activeFilter = 'all';
+    this.notifications = [];
     this.buffer = '';       // Full accumulated text in the terminal
     this.queue = '';        // Text waiting to be typed out
     this.snippetIndex = {}; // Per-skill index tracking which snippet is next
@@ -484,10 +489,15 @@ export class HackerTerminal {
     this.bodyEl = document.getElementById('hacker-terminal-body');
     this.skillLabelEl = document.getElementById('hacker-terminal-skill');
     this.toggleBtn = document.getElementById('hacker-terminal-toggle');
+    this.filterEls = Array.from(document.querySelectorAll('[data-terminal-filter]'));
 
     if (this.toggleBtn) {
       this.toggleBtn.addEventListener('click', () => this.toggleVisibility());
     }
+
+    this.filterEls.forEach((button) => {
+      button.addEventListener('click', () => this.setFilter(button.dataset.terminalFilter || 'all'));
+    });
 
     if (this.containerEl) {
       this.containerEl.style.display = '';
@@ -552,7 +562,7 @@ export class HackerTerminal {
     this.buffer = '';
     this.queue = '';
     this._lineCount = 0;
-    if (this.outputEl) this.outputEl.textContent = '';
+    this._renderOutput();
 
     // Initialize snippet indices if needed
     if (this.snippetIndex[skillId] === undefined) {
@@ -603,13 +613,19 @@ export class HackerTerminal {
     }
   }
 
+  setFilter(filter) {
+    this.activeFilter = filter || 'all';
+    this.filterEls.forEach((button) => {
+      button.classList.toggle('active', button.dataset.terminalFilter === this.activeFilter);
+    });
+    this._renderOutput();
+  }
+
   _renderIdleState() {
     if (!this.outputEl || !this.skillLabelEl) return;
 
     this.skillLabelEl.textContent = this.isActive ? this.skillLabelEl.textContent : 'Idle';
-    if (!this.isActive && this.buffer.length === 0) {
-      this.outputEl.textContent = '> Terminal docked. Start a hacking activity to stream live code here.\n> Use Hide to collapse the dock until you need it again.';
-    }
+    this._renderOutput();
     this._applyVisibility();
   }
 
@@ -626,19 +642,152 @@ export class HackerTerminal {
     };
 
     const prefix = prefixMap[type] || '[SYS]';
+    const now = Date.now();
+    const category = this._categorizeNotification(message, type);
+    const normalizedMessage = String(message || '').trim();
+
+    const lastEntry = this.notifications[this.notifications.length - 1];
+    if (this._canMergeNotification(lastEntry, normalizedMessage, type, category, now)) {
+      lastEntry.count = (lastEntry.count || 1) + 1;
+      lastEntry.message = normalizedMessage;
+      lastEntry.timestamp = new Date(now).toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      lastEntry.timeMs = now;
+      this._renderOutput();
+      this._applyVisibility();
+      return true;
+    }
+
     const timestamp = new Date().toLocaleTimeString('en-US', {
       hour12: false,
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     });
-    const existing = this.outputEl.textContent || '';
-    const entry = `${timestamp} ${prefix} ${message}`;
-    const next = `${existing ? `${existing}\n` : ''}${entry}`;
-    const lines = next.split('\n').slice(-24);
-    this.outputEl.textContent = lines.join('\n');
+    this.notifications.push({
+      timestamp,
+      prefix,
+      type,
+      category,
+      message: normalizedMessage,
+      timeMs: now,
+      count: 1
+    });
+    if (this.notifications.length > MAX_NOTIFICATION_LINES) {
+      this.notifications = this.notifications.slice(-MAX_NOTIFICATION_LINES);
+    }
+    this._renderOutput();
     this._applyVisibility();
     return true;
+  }
+
+  _categorizeNotification(message, type) {
+    const lower = String(message || '').toLowerCase();
+
+    if (lower.startsWith('loot:') || lower.includes('purchased') || lower.includes('sold ') || lower.includes('equipped ') || lower.includes('unequipped ') || lower.includes('x ')) {
+      return 'loot';
+    }
+
+    if (lower.includes('xp') || type === 'levelup') {
+      return 'xp';
+    }
+
+    if (lower.includes('defeated') || lower.includes('respawning') || lower.includes('combat') || type === 'victory') {
+      return 'combat';
+    }
+
+    return 'system';
+  }
+
+  _canMergeNotification(lastEntry, message, type, category, now) {
+    if (!lastEntry) return false;
+    if (lastEntry.type !== type || lastEntry.category !== category) return false;
+    if ((now - (lastEntry.timeMs || 0)) > MERGEABLE_NOTIFICATION_WINDOW_MS) return false;
+
+    const currentLoot = this._parseLootMessage(message);
+    const previousLoot = this._parseLootMessage(lastEntry.message);
+    if (currentLoot && previousLoot) {
+      return currentLoot.name === previousLoot.name && currentLoot.icon === previousLoot.icon;
+    }
+
+    return lastEntry.message === message;
+  }
+
+  _parseLootMessage(message) {
+    const match = String(message || '').match(/^Loot:\s*(?<icon>[^\s]+)?\s*\+(?<quantity>\d+)x\s+(?<name>.+)$/);
+    if (!match || !match.groups) return null;
+
+    return {
+      icon: (match.groups.icon || '').trim(),
+      quantity: Number(match.groups.quantity || 0),
+      name: (match.groups.name || '').trim()
+    };
+  }
+
+  _formatNotificationMessage(entry) {
+    const loot = this._parseLootMessage(entry.message);
+    if (loot && (entry.count || 1) > 1) {
+      return `Loot: ${loot.icon ? `${loot.icon} ` : ''}${loot.name} x${loot.quantity * entry.count}`;
+    }
+
+    if ((entry.count || 1) > 1) {
+      return `${entry.message} x${entry.count}`;
+    }
+
+    return entry.message;
+  }
+
+  _escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  _getVisibleNotifications() {
+    if (this.activeFilter === 'all') {
+      return this.notifications;
+    }
+
+    return this.notifications.filter(entry => entry.category === this.activeFilter);
+  }
+
+  _getLiveStreamHtml() {
+    if (!this.isActive || !this.currentSkillId) {
+      return '';
+    }
+
+    const streamLines = this.buffer.split('\n').slice(-18).join('\n').trim();
+    const content = streamLines || '> Establishing live hacking stream...';
+
+    return `<div class="terminal-live-stream"><div class="terminal-live-stream-label">Live Hack Stream</div><pre>${this._escapeHtml(content)}</pre></div>`;
+  }
+
+  _renderOutput() {
+    if (!this.outputEl) return;
+
+    const visibleNotifications = this._getVisibleNotifications();
+    const logHtml = visibleNotifications.map((entry) => {
+      return `<div class="terminal-log-entry terminal-log-${entry.type}"><span class="terminal-log-time">${this._escapeHtml(entry.timestamp)}</span><span class="terminal-log-tag">${this._escapeHtml(entry.prefix)}</span><span class="terminal-log-message">${this._escapeHtml(this._formatNotificationMessage(entry))}</span></div>`;
+    }).join('');
+
+    const idleHtml = (!logHtml && !this.isActive)
+      ? '<div class="terminal-log-entry terminal-log-info"><span class="terminal-log-tag">[SYS]</span><span class="terminal-log-message">Terminal docked. Start a hacking activity to stream live code here.</span></div><div class="terminal-log-entry terminal-log-info"><span class="terminal-log-tag">[SYS]</span><span class="terminal-log-message">Gameplay notifications, loot, XP, and system events appear here.</span></div>'
+      : '';
+
+    const showStream = this.activeFilter === 'all';
+    const feedHtml = `<div class="terminal-log-feed"><div class="terminal-log-feed-label">Event Feed</div>${logHtml || idleHtml}</div>`;
+    this.outputEl.innerHTML = `${feedHtml}${showStream ? this._getLiveStreamHtml() : ''}`;
+
+    if (this.bodyEl && !this.isMinimized) {
+      this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
+    }
   }
 
   /**
@@ -696,7 +845,7 @@ export class HackerTerminal {
     }
 
     // Update DOM
-    this.outputEl.textContent = this.buffer;
+    this._renderOutput();
 
     // Auto-scroll to bottom
     if (this.bodyEl && !this.isMinimized) {
@@ -713,7 +862,7 @@ export class HackerTerminal {
     this.queue = '';
     this.snippetIndex = {};
     this.statusIndex = {};
-    if (this.outputEl) this.outputEl.textContent = '';
+    this.notifications = [];
     this._renderIdleState();
   }
 }

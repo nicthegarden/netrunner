@@ -28,7 +28,13 @@ export class Inventory {
     }
 
     this.items[itemId].quantity += quantity;
-    events.emit(EVENTS.ITEM_GAINED, { item: itemDef.name, quantity, icon: itemDef.icon });
+    events.emit(EVENTS.ITEM_GAINED, {
+      item: itemDef.name,
+      itemId,
+      itemName: itemDef.name,
+      quantity,
+      icon: itemDef.icon
+    });
     events.emit(EVENTS.INVENTORY_CHANGED, this.getSummary());
     return true;
   }

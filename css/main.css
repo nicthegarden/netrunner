@@ -1067,14 +1067,7 @@ body::before {
    Notifications
    ========================================== */
 #notifications {
-  position: fixed;
-  top: 15px;
-  right: 15px;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-width: 350px;
+  display: none;
 }
 
 .notification {
@@ -2191,6 +2184,30 @@ body::before {
   text-shadow: 0 0 4px #00d4ff;
 }
 
+.hacker-terminal-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.terminal-filter {
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.18);
+  color: #7fe8ff;
+  font-family: inherit;
+  font-size: 9px;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.terminal-filter.active {
+  background: rgba(0, 255, 65, 0.14);
+  border-color: rgba(0, 255, 65, 0.35);
+  color: #9dffb7;
+}
+
 .hacker-terminal-toggle {
   background: none;
   border: 1px solid #00ff4166;
@@ -2236,12 +2253,76 @@ body::before {
   color: #00ff41;
   font-size: 10px;
   line-height: 1.5;
-  white-space: pre-wrap;
-  word-break: break-all;
+  word-break: break-word;
   margin: 0;
   text-shadow: 0 0 3px rgba(0, 255, 65, 0.5);
   opacity: 0.9;
 }
+
+.terminal-log-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.terminal-log-feed-label {
+  color: #7fe8ff;
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.terminal-live-stream {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 255, 65, 0.14);
+}
+
+.terminal-live-stream-label {
+  color: #00ff41;
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.terminal-live-stream pre {
+  margin: 0;
+  color: #00ff41;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.terminal-log-entry {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 3px;
+}
+
+.terminal-log-time {
+  color: #7fffd4;
+  flex: 0 0 auto;
+}
+
+.terminal-log-tag {
+  flex: 0 0 auto;
+  font-weight: bold;
+}
+
+.terminal-log-message {
+  color: #d8ffe2;
+}
+
+.terminal-log-info .terminal-log-tag { color: #00d4ff; }
+.terminal-log-warning .terminal-log-tag { color: #ffff00; }
+.terminal-log-error .terminal-log-tag { color: #ff4d6d; }
+.terminal-log-success .terminal-log-tag { color: #00ff41; }
+.terminal-log-victory .terminal-log-tag { color: #ff66ff; }
+.terminal-log-levelup .terminal-log-tag { color: #66ccff; }
 
 /* Blinking cursor at the end of the terminal */
 .hacker-terminal-cursor {

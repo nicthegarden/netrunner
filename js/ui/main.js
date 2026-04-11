@@ -38,7 +38,9 @@ export class UI {
     }));
     this._eventUnsubs.push(events.on(EVENTS.CURRENCY_CHANGED, (data) => this.onCurrencyChanged(data)));
     this._eventUnsubs.push(events.on(EVENTS.ITEM_GAINED, (data) => {
-      this.notify(`+${data.quantity}x ${data.item}`, 'info');
+      const label = data.itemName || data.item;
+      const icon = data.icon ? `${data.icon} ` : '';
+      this.notify(`Loot: ${icon}+${data.quantity}x ${label}`, 'info');
     }));
     this._eventUnsubs.push(events.on(EVENTS.ACHIEVEMENT_UNLOCKED, (data) => {
       this.notify(`ACHIEVEMENT: ${data.name} - ${data.description}`, 'victory');
@@ -68,7 +70,10 @@ export class UI {
       if (loot.currency > 0) parts.push(`${loot.currency} E$`);
       if (loot.items) {
         Object.entries(loot.items).forEach(([item, qty]) => {
-          parts.push(`${qty}x ${item}`);
+          const itemKey = Object.keys(ITEMS).find((key) => ITEMS[key].id === item || key.toLowerCase() === item.toLowerCase());
+          const itemDef = itemKey ? ITEMS[itemKey] : null;
+          const itemLabel = itemDef ? `${itemDef.icon} ${itemDef.name}` : item.replace(/_/g, ' ');
+          parts.push(`${qty}x ${itemLabel}`);
         });
       }
       if (parts.length > 0) this.notify(`Loot: ${parts.join(', ')}`, 'info');
@@ -86,14 +91,6 @@ export class UI {
     if (this.hackerTerminal?.writeNotification?.(message, type)) {
       return;
     }
-
-    const notifEl = document.getElementById('notifications');
-    if (!notifEl) return;
-    const div = document.createElement('div');
-    div.className = `notification notification-${type}`;
-    div.textContent = message;
-    notifEl.appendChild(div);
-    setTimeout(() => div.remove(), 3000);
   }
 
   // ==========================================
@@ -1097,6 +1094,17 @@ export class UI {
 
     const changelog = [
       {
+        version: '0.9.1',
+        date: 'April 11, 2026',
+        title: 'The Terminal Feed Polish Update',
+        entries: [
+          { type: 'fix', text: 'Structured Terminal Event Feed — The bottom terminal now renders gameplay notifications as a dedicated event feed instead of mixing them directly into the scrolling code stream.' },
+          { type: 'fix', text: 'Terminal Filters Activated — Loot, XP, Combat, and System filter chips now drive the terminal view so event categories are easier to read while hacking.' },
+          { type: 'fix', text: 'Readable Loot Notifications — Item gains and combat loot now resolve to display names and icons instead of raw item ids such as encrypted_data.' },
+          { type: 'fix', text: 'Notification Spam Reduction — Repeated loot notifications now merge into clearer stacked terminal lines, especially during offline progress recovery.' },
+        ],
+      },
+      {
         version: '0.9.0',
         date: 'April 11, 2026',
         title: 'The Multi-Grind & Linked Loot Update',
@@ -1507,6 +1515,11 @@ export class UI {
   // ==========================================
   init() {
     this.setupEventListeners();
+    const notifEl = document.getElementById('notifications');
+    if (notifEl) {
+      notifEl.innerHTML = '';
+      notifEl.style.display = 'none';
+    }
     this.updateCurrencyDisplay();
     this.navigate('skills');
     this.updateSkillListings();
