@@ -367,12 +367,12 @@ export const ENEMIES = {
   DIGITAL_PHANTOM: {
     id: 'digital_phantom', name: 'Digital Phantom (Boss)',
     hp: 250, damage: 22, xpReward: 2800, isBoss: true, evasion: 0.20,
-    loot: { 'daemon_code': { min: 15, max: 30 }, 'net_artifact': { min: 10, max: 15 }, 'spectral_sniffer': { min: 0, max: 1 }, 'eurodollar': { min: 7000, max: 18000 } },
+    loot: { 'daemon_code': { min: 15, max: 30 }, 'net_artifact': { min: 10, max: 15 }, 'spectral_sniffer': { min: 0, max: 0 }, 'eurodollar': { min: 7000, max: 18000 } },
   },
   CHROME_WRAITH: {
     id: 'chrome_wraith', name: 'Chrome Wraith (Boss)',
     hp: 400, damage: 40, xpReward: 4000, isBoss: true, phase2_trigger: 0.5, lifeSteal: 0.15,
-    loot: { 'neural_implant': { min: 10, max: 20 }, 'chrome_scrap': { min: 25, max: 50 }, 'chrome_harvester': { min: 0, max: 1 }, 'net_artifact': { min: 12, max: 20 }, 'eurodollar': { min: 15000, max: 40000 } },
+    loot: { 'neural_implant': { min: 10, max: 20 }, 'chrome_scrap': { min: 25, max: 50 }, 'chrome_harvester': { min: 0, max: 0 }, 'net_artifact': { min: 12, max: 20 }, 'eurodollar': { min: 15000, max: 40000 } },
   },
 };
 
@@ -396,11 +396,11 @@ export const ACTIVITIES = {
     },
     {
       id: 'elite_hack', name: 'Crack Arasaka Mainframe', level: 70, duration: 30, xp: 400, masteryXp: 100,
-      rewards: { items: { 'data_shard': { min: 10, max: 25 }, 'neural_implant': { min: 1, max: 2 }, 'neuroclock_jack': { min: 0, max: 1 } }, currency: { min: 500, max: 2000 } },
+      rewards: { items: { 'data_shard': { min: 10, max: 25 }, 'neural_implant': { min: 1, max: 2 } }, currency: { min: 500, max: 2000 } },
     },
     {
       id: 'legendary_hack', name: 'Breach Netrunner Consciousness', level: 90, duration: 40, xp: 800, masteryXp: 200,
-      rewards: { items: { 'data_shard': { min: 20, max: 40 }, 'net_artifact': { min: 1, max: 3 }, 'daemon_code': { min: 2, max: 5 }, 'zero_day_suite': { min: 0, max: 1 } }, currency: { min: 2000, max: 8000 } },
+      rewards: { items: { 'data_shard': { min: 20, max: 40 }, 'net_artifact': { min: 1, max: 3 }, 'daemon_code': { min: 2, max: 5 } }, currency: { min: 2000, max: 8000 } },
     },
   ],
 
@@ -419,7 +419,7 @@ export const ACTIVITIES = {
      },
     {
       id: 'elite_decrypt', name: 'Decode Arasaka Protocol', level: 70, duration: 35, xp: 420, masteryXp: 120,
-      rewards: { items: { 'encrypted_data': { min: 10, max: 20 }, 'stolen_intel': { min: 3, max: 6 }, 'neural_implant': { min: 1, max: 2 }, 'spectral_sniffer': { min: 0, max: 1 } }, currency: { min: 600, max: 2500 } },
+      rewards: { items: { 'encrypted_data': { min: 10, max: 20 }, 'stolen_intel': { min: 3, max: 6 }, 'neural_implant': { min: 1, max: 2 } }, currency: { min: 600, max: 2500 } },
     },
      {
        id: 'legendary_decrypt', name: 'Crack Megacorp AI Mind', level: 90, duration: 45, xp: 900, masteryXp: 250,
@@ -461,7 +461,7 @@ export const ACTIVITIES = {
      },
     {
       id: 'ai_daemon', name: 'Code AI-Enhanced Daemon', level: 60, duration: 30, xp: 250, masteryXp: 80,
-      rewards: { items: { 'daemon_code': { min: 4, max: 10 }, 'net_artifact': { min: 0, max: 1 }, 'daemon_forge': { min: 0, max: 1 } }, currency: { min: 250, max: 1000 } },
+      rewards: { items: { 'daemon_code': { min: 4, max: 10 }, 'net_artifact': { min: 0, max: 1 } }, currency: { min: 250, max: 1000 } },
     },
      {
        id: 'elite_daemon', name: 'Design Netrunner-Grade Daemon', level: 70, duration: 45, xp: 520, masteryXp: 170,
@@ -489,7 +489,7 @@ export const ACTIVITIES = {
      },
     {
       id: 'abyss_dive', name: 'Abyss Delve (Netrunner Zone)', level: 70, duration: 45, xp: 440, masteryXp: 150,
-      rewards: { items: { 'net_artifact': { min: 3, max: 7 }, 'daemon_code': { min: 5, max: 12 }, 'blackwall_router': { min: 0, max: 1 } }, currency: { min: 800, max: 3000 } },
+      rewards: { items: { 'net_artifact': { min: 3, max: 7 }, 'daemon_code': { min: 5, max: 12 } }, currency: { min: 800, max: 3000 } },
     },
      {
        id: 'void_dive', name: 'Void Abyss Expedition', level: 90, duration: 60, xp: 950, masteryXp: 320,
@@ -559,7 +559,7 @@ export const ACTIVITIES = {
      },
     {
       id: 'phantom_surf', name: 'Phantom Speed Run', level: 70, duration: 25, xp: 300, masteryXp: 110,
-      rewards: { items: { 'net_artifact': { min: 1, max: 2 }, 'daemon_code': { min: 2, max: 5 }, 'quicktrace_graft': { min: 0, max: 1 } }, currency: { min: 500, max: 2000 } },
+      rewards: { items: { 'net_artifact': { min: 1, max: 2 }, 'daemon_code': { min: 2, max: 5 } }, currency: { min: 500, max: 2000 } },
     },
      {
        id: 'void_surf', name: 'Void Hyperspace Traverse', level: 90, duration: 35, xp: 700, masteryXp: 250,
@@ -613,7 +613,7 @@ export const ACTIVITIES = {
      },
     {
       id: 'phantom_infiltration', name: 'Phantom Corpo Infiltration', level: 70, duration: 35, xp: 400, masteryXp: 140,
-      rewards: { items: { 'stolen_intel': { min: 7, max: 15 }, 'biometric_scanner': { min: 1, max: 3 }, 'ghostwalk_cloak': { min: 0, max: 1 } }, currency: { min: 1000, max: 3500 } },
+      rewards: { items: { 'stolen_intel': { min: 7, max: 15 }, 'biometric_scanner': { min: 1, max: 3 } }, currency: { min: 1000, max: 3500 } },
     },
      {
        id: 'shadow_legend', name: 'Shadow Protocol Breach', level: 90, duration: 50, xp: 850, masteryXp: 300,
@@ -663,7 +663,7 @@ export const ACTIVITIES = {
      },
     {
       id: 'legendary_run', name: 'Continental Contraband Network', level: 90, duration: 60, xp: 1000, masteryXp: 350,
-      rewards: { items: { 'contraband': { min: 25, max: 50 }, 'streetphantom_os': { min: 0, max: 1 }, 'nightmarket_case': { min: 1, max: 2 } }, currency: { min: 5000, max: 15000 } },
+      rewards: { items: { 'contraband': { min: 25, max: 50 }, 'nightmarket_case': { min: 1, max: 2 } }, currency: { min: 5000, max: 15000 } },
     },
    ],
 
