@@ -879,6 +879,26 @@ body::before {
   gap: 8px;
 }
 
+.inventory-toolbar,
+.shop-toolbar,
+.shop-pagination {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.shop-pagination {
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.shop-page-label {
+  color: #7fe8ff;
+  font-size: 11px;
+}
+
 .inv-empty {
   color: #555;
   font-style: italic;

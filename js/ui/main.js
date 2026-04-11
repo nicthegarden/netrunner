@@ -11,6 +11,9 @@ export class UI {
     this.currentView = 'skills';
     this.currentCategory = 'hacking';
     this.currentSkill = null;
+    this.inventoryFilter = 'all';
+    this.shopFilter = 'all';
+    this.shopPage = 0;
     this.pickerOverlay = null;
     this._eventUnsubs = [];
     this.hackerTerminal = new HackerTerminal();
@@ -649,13 +652,25 @@ export class UI {
     });
     html += '</div></div>';
 
+    const filteredItems = this.inventoryFilter === 'all'
+      ? items
+      : items.filter(item => item.type === this.inventoryFilter || item.linkedSkill === this.inventoryFilter);
+
     // Items section
-    html += '<div class="inv-section"><h3 class="inv-section-title">ITEMS</h3>';
-    if (items.length === 0) {
+    html += `<div class="inv-section"><h3 class="inv-section-title">ITEMS</h3>
+      <div class="inventory-toolbar">
+        <button class="btn-small ${this.inventoryFilter === 'all' ? 'btn-danger' : ''}" data-action="set-inventory-filter" data-filter="all">All</button>
+        <button class="btn-small ${this.inventoryFilter === 'weapon' ? 'btn-danger' : ''}" data-action="set-inventory-filter" data-filter="weapon">Weapons</button>
+        <button class="btn-small ${this.inventoryFilter === 'armor' ? 'btn-danger' : ''}" data-action="set-inventory-filter" data-filter="armor">Armor</button>
+        <button class="btn-small ${this.inventoryFilter === 'cyberware' ? 'btn-danger' : ''}" data-action="set-inventory-filter" data-filter="cyberware">Cyberware</button>
+        <button class="btn-small ${this.inventoryFilter === 'material' ? 'btn-danger' : ''}" data-action="set-inventory-filter" data-filter="material">Materials</button>
+        <button class="btn-small ${this.inventoryFilter === 'consumable' ? 'btn-danger' : ''}" data-action="set-inventory-filter" data-filter="consumable">Consumables</button>
+      </div>`;
+    if (filteredItems.length === 0) {
       html += '<p class="inv-empty">No items yet. Start grinding!</p>';
     } else {
       html += '<div class="inv-grid">';
-      items.forEach(item => {
+      filteredItems.forEach(item => {
         const isEquippable = ['weapon', 'armor', 'cyberware'].includes(item.type);
         const canSell = item.value > 0;
         const rarityColor = rarityColors[item.rarity] || '#cccccc';
@@ -715,8 +730,25 @@ export class UI {
     const container = document.getElementById('shop-container');
     if (!container) return;
 
-    const shopItems = getRotatingShopItems(game.economy.getCurrency(), game.skillManager.getTotalLevel());
-    let html = `<div class="shop-summary">Curated rollout: ${shopItems.length} items shown from ${SHOP_ITEMS.length}+ total listings. Inventory perks and linked-skill boosts are shown on each card.</div><div class="shop-grid">`;
+    const activeSkillId = this.currentSkill || game.skillManager.getSkillsByCategory(this.currentCategory)[0]?.id || null;
+    const rotatingItems = getRotatingShopItems(game.economy.getCurrency(), game.skillManager.getTotalLevel(), activeSkillId);
+    const filteredShop = this.shopFilter === 'all'
+      ? rotatingItems
+      : rotatingItems.filter(item => item.category === this.shopFilter || item.linkedSkill === this.shopFilter);
+    const pageSize = 12;
+    const maxPage = Math.max(0, Math.ceil(filteredShop.length / pageSize) - 1);
+    this.shopPage = Math.min(this.shopPage, maxPage);
+    const pagedItems = filteredShop.slice(this.shopPage * pageSize, (this.shopPage + 1) * pageSize);
+    let html = `<div class="shop-summary">Curated rollout: ${rotatingItems.length} items shown from ${SHOP_ITEMS.length}+ total listings. Current spotlight: ${activeSkillId ? activeSkillId.replace(/_/g, ' ') : 'mixed market'}.</div>
+      <div class="shop-toolbar">
+        <button class="btn-small ${this.shopFilter === 'all' ? 'btn-danger' : ''}" data-action="set-shop-filter" data-filter="all">All</button>
+        <button class="btn-small ${this.shopFilter === 'weapon' ? 'btn-danger' : ''}" data-action="set-shop-filter" data-filter="weapon">Weapons</button>
+        <button class="btn-small ${this.shopFilter === 'armor' ? 'btn-danger' : ''}" data-action="set-shop-filter" data-filter="armor">Armor</button>
+        <button class="btn-small ${this.shopFilter === 'cyberware' ? 'btn-danger' : ''}" data-action="set-shop-filter" data-filter="cyberware">Cyberware</button>
+        <button class="btn-small ${this.shopFilter === 'material' ? 'btn-danger' : ''}" data-action="set-shop-filter" data-filter="material">Materials</button>
+        <button class="btn-small ${this.shopFilter === 'consumable' ? 'btn-danger' : ''}" data-action="set-shop-filter" data-filter="consumable">Consumables</button>
+      </div>
+      <div class="shop-grid">`;
     const rarityColors = {
       common: '#cccccc',
       uncommon: '#00ff41',
@@ -724,7 +756,7 @@ export class UI {
       epic: '#ff00ff',
       legendary: '#ffff00',
     };
-    shopItems.forEach(item => {
+    pagedItems.forEach(item => {
       const canAfford = game.economy.getCurrency() >= item.cost;
       // Look up item rarity from ITEMS
       const itemKey = Object.keys(ITEMS).find(k => ITEMS[k].id === item.id);
@@ -749,7 +781,11 @@ export class UI {
         </button>
       </div>`;
     });
-    html += '</div>';
+    html += `</div><div class="shop-pagination">
+      <button class="btn-small ${this.shopPage <= 0 ? 'disabled' : ''}" data-action="shop-page" data-direction="prev" ${this.shopPage <= 0 ? 'disabled' : ''}>Prev</button>
+      <span class="shop-page-label">Page ${this.shopPage + 1} / ${Math.max(1, maxPage + 1)}</span>
+      <button class="btn-small ${this.shopPage >= maxPage ? 'disabled' : ''}" data-action="shop-page" data-direction="next" ${this.shopPage >= maxPage ? 'disabled' : ''}>Next</button>
+    </div>`;
     container.innerHTML = html;
   }
 
@@ -1055,10 +1091,10 @@ export class UI {
         title: 'The Multi-Grind & Linked Loot Update',
         entries: [
           { type: 'feature', text: 'Parallel Multi-Grind System — Up to 3 primary non-combat grinds can now run at the same time, plus background hacking where supported.' },
-          { type: 'balance', text: 'Shared Grind Load Debuff — Every extra simultaneous grind lowers payout efficiency for all active grinds. This keeps the game responsive while making parallel grinding a strategic tradeoff instead of a free speed exploit.' },
+          { type: 'balance', text: 'Shared Grind Load Debuff — Every extra simultaneous grind lowers payout efficiency for all active grinds, now tuned to a softer progression-friendly curve: 82% at 2 grinds, 68% at 3 grinds, and 58% at 4 grinds.' },
           { type: 'feature', text: 'Linked Item Catalog — The game now supports a massive generated catalog of 1000+ linked items with rarity, pricing, linked skills, and perk metadata.' },
           { type: 'feature', text: 'Inventory Perk Cards — Inventory entries now display perk text and linked-skill context so loot is readable instead of just being a list of names.' },
-          { type: 'feature', text: 'Rotating Store Rollout — The shop now surfaces a curated slice of the larger item pool based on your progression and available cash, instead of dumping the entire catalog on screen.' },
+          { type: 'feature', text: 'Rotating Store Rollout — The shop now surfaces a curated slice of the larger item pool based on your progression, current skill focus, and available cash, with category filters and pagination.' },
           { type: 'feature', text: 'Admin Access Controls — Admin user details now include password reset, session revocation, email/admin access management, and recent login session visibility.' },
         ],
       },

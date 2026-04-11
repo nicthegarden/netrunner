@@ -570,6 +570,29 @@ document.addEventListener('click', (e) => {
     return;
   }
 
+  const inventoryFilter = match('[data-action="set-inventory-filter"]');
+  if (inventoryFilter) {
+    ui.inventoryFilter = inventoryFilter.dataset.filter;
+    ui.renderInventoryView();
+    return;
+  }
+
+  const shopFilter = match('[data-action="set-shop-filter"]');
+  if (shopFilter) {
+    ui.shopFilter = shopFilter.dataset.filter;
+    ui.shopPage = 0;
+    ui.renderShopView();
+    return;
+  }
+
+  const shopPage = match('[data-action="shop-page"]');
+  if (shopPage && !shopPage.disabled) {
+    ui.shopPage += shopPage.dataset.direction === 'next' ? 1 : -1;
+    ui.shopPage = Math.max(0, ui.shopPage);
+    ui.renderShopView();
+    return;
+  }
+
   // Inventory equip button
   const equipItem = match('[data-action="equip-item"]');
   if (equipItem) {

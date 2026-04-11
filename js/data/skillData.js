@@ -48,17 +48,17 @@ export const BACKGROUND_HACK_SKILLS = new Set([
 export const BACKGROUND_HACK_EFFICIENCY = 0.75;
 
 // Concurrent grind load tuning
-export const MULTIGRIND_LOAD_PENALTY = 0.35;
-export const MULTIGRIND_MIN_EFFICIENCY = 0.35;
+export const MULTIGRIND_LOAD_PENALTY = 0.22;
+export const MULTIGRIND_MIN_EFFICIENCY = 0.5;
 export const SHOP_ROLLOUT_SIZE = 36;
 
 export function getMultiGrindEfficiency(activeCount) {
   const count = Math.max(1, Number(activeCount) || 1);
   if (count <= 1) return 1;
-  return Math.max(
-    MULTIGRIND_MIN_EFFICIENCY,
-    1 / (1 + ((count - 1) * MULTIGRIND_LOAD_PENALTY))
-  );
+  if (count === 2) return 0.82;
+  if (count === 3) return 0.68;
+  if (count === 4) return 0.58;
+  return Math.max(MULTIGRIND_MIN_EFFICIENCY, 0.58 - ((count - 4) * MULTIGRIND_LOAD_PENALTY * 0.12));
 }
 
 export function getItemPerkLines(itemDef) {
@@ -1104,7 +1104,7 @@ const GENERATED_CATALOG = generateLinkedCatalog();
 Object.assign(ITEMS, GENERATED_CATALOG.generatedItems);
 SHOP_ITEMS.push(...GENERATED_CATALOG.generatedShopItems);
 
-export function getRotatingShopItems(currency = 0, totalLevel = 1) {
+export function getRotatingShopItems(currency = 0, totalLevel = 1, activeSkillId = null) {
   const normalizedLevel = Math.max(1, Number(totalLevel) || 1);
   const normalizedCurrency = Math.max(0, Number(currency) || 0);
   const progressionScore = normalizedLevel + Math.floor(normalizedCurrency / 5000);
@@ -1112,8 +1112,10 @@ export function getRotatingShopItems(currency = 0, totalLevel = 1) {
   const weighted = SHOP_ITEMS
     .filter(item => (item.requiredLevel || 1) <= normalizedLevel + 20)
     .sort((a, b) => {
-      const aWeight = Math.abs((a.requiredLevel || 1) - progressionScore);
-      const bWeight = Math.abs((b.requiredLevel || 1) - progressionScore);
+      const aThemeBonus = activeSkillId && a.linkedSkill === activeSkillId ? -18 : 0;
+      const bThemeBonus = activeSkillId && b.linkedSkill === activeSkillId ? -18 : 0;
+      const aWeight = Math.abs((a.requiredLevel || 1) - progressionScore) + aThemeBonus;
+      const bWeight = Math.abs((b.requiredLevel || 1) - progressionScore) + bThemeBonus;
       if (aWeight !== bWeight) return aWeight - bWeight;
       return a.cost - b.cost;
     });
