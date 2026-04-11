@@ -468,6 +468,7 @@ export class HackerTerminal {
 
     this.isActive = false;
     this.isMinimized = false;
+    this.isHidden = false;
     this.currentSkillId = null;
     this.buffer = '';       // Full accumulated text in the terminal
     this.queue = '';        // Text waiting to be typed out
@@ -485,8 +486,13 @@ export class HackerTerminal {
     this.toggleBtn = document.getElementById('hacker-terminal-toggle');
 
     if (this.toggleBtn) {
-      this.toggleBtn.addEventListener('click', () => this.toggleMinimize());
+      this.toggleBtn.addEventListener('click', () => this.toggleVisibility());
     }
+
+    if (this.containerEl) {
+      this.containerEl.style.display = '';
+    }
+    this._renderIdleState();
   }
 
   /**
@@ -522,6 +528,8 @@ export class HackerTerminal {
     } else {
       if (this.isActive) {
         this.stop();
+      } else {
+        this._renderIdleState();
       }
     }
   }
@@ -532,8 +540,7 @@ export class HackerTerminal {
     this.isActive = true;
     this.currentSkillId = skillId;
 
-    // Show container
-    this.containerEl.style.display = '';
+    this._applyVisibility();
 
     // Update skill label
     if (this.skillLabelEl) {
@@ -570,21 +577,40 @@ export class HackerTerminal {
       this._typingInterval = null;
     }
 
-    // Don't hide immediately — show final state for a moment
-    // The next update() call will hide if still inactive
-    if (this.containerEl) {
-      this.containerEl.style.display = 'none';
+    this.buffer = '';
+    this.queue = '';
+    this._lineCount = 0;
+    this._renderIdleState();
+  }
+
+  toggleVisibility() {
+    this.isHidden = !this.isHidden;
+    this.isMinimized = this.isHidden;
+    this._applyVisibility();
+  }
+
+  _applyVisibility() {
+    if (!this.containerEl || !this.bodyEl) return;
+
+    this.containerEl.classList.toggle('is-hidden', this.isHidden);
+    this.bodyEl.style.display = this.isHidden ? 'none' : '';
+    if (this.bodyEl) {
+      this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
+    }
+    if (this.toggleBtn) {
+      this.toggleBtn.textContent = this.isHidden ? 'Show' : 'Hide';
+      this.toggleBtn.title = this.isHidden ? 'Show terminal' : 'Hide terminal';
     }
   }
 
-  toggleMinimize() {
-    this.isMinimized = !this.isMinimized;
-    if (this.bodyEl) {
-      this.bodyEl.style.display = this.isMinimized ? 'none' : '';
+  _renderIdleState() {
+    if (!this.outputEl || !this.skillLabelEl) return;
+
+    this.skillLabelEl.textContent = this.isActive ? this.skillLabelEl.textContent : 'Idle';
+    if (!this.isActive && this.buffer.length === 0) {
+      this.outputEl.textContent = '> Terminal docked. Start a hacking activity to stream live code here.\n> Use Hide to collapse the dock until you need it again.';
     }
-    if (this.toggleBtn) {
-      this.toggleBtn.textContent = this.isMinimized ? '+' : '_';
-    }
+    this._applyVisibility();
   }
 
   /**
@@ -660,5 +686,6 @@ export class HackerTerminal {
     this.snippetIndex = {};
     this.statusIndex = {};
     if (this.outputEl) this.outputEl.textContent = '';
+    this._renderIdleState();
   }
 }

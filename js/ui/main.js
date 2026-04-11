@@ -1,6 +1,6 @@
 import { events, EVENTS } from '../engine/events.js';
 import { getGame } from '../main.js';
-import { SHOP_ITEMS, ITEMS, SKILLS, SKILL_ABILITIES, PASSIVE_BONUSES, ACTIVITIES, BACKGROUND_HACK_SKILLS, BACKGROUND_HACK_EFFICIENCY } from '../data/skillData.js';
+import { SHOP_ITEMS, ITEMS, SKILLS, SKILL_ABILITIES, PASSIVE_BONUSES, ACTIVITIES, BACKGROUND_HACK_SKILLS, BACKGROUND_HACK_EFFICIENCY, getItemTooltip, getRotatingShopItems } from '../data/skillData.js';
 import { FACTIONS } from '../data/worldData.js';
 import { CRAFT_RECIPES } from '../systems/crafting.js';
 import { PRESTIGE_UPGRADES } from '../systems/prestige.js';
@@ -270,62 +270,166 @@ export class UI {
     if (!container) return;
 
     const skills = game.skillManager.getSkillsByCategory(this.currentCategory);
-    container.innerHTML = '';
+    const selectedSkill = this.currentSkill
+      ? game.skillManager.getSkill(this.currentSkill)
+      : skills[0];
 
-    skills.forEach(skill => {
-      const div = document.createElement('div');
-      div.className = `skill-card ${skill.isActive ? 'active' : ''}`;
-      div.style.borderColor = skill.color;
+    if (!this.currentSkill && selectedSkill) {
+      this.currentSkill = selectedSkill.id;
+    }
 
-      // Real XP progress
-      const progress = skill.getXPProgress();
-      const xpStr = skill.level >= 99
+    const activities = selectedSkill ? (ACTIVITIES[selectedSkill.id] || []) : [];
+    const skillRail = skills.map((skill) => {
+      const isSelected = skill.id === selectedSkill?.id;
+      return `
+        <button class="skill-rail-item ${isSelected ? 'active' : ''}" data-action="focus-skill" data-skill-id="${skill.id}">
+          <span class="skill-rail-icon">${skill.icon}</span>
+          <span class="skill-rail-copy">
+            <span class="skill-rail-name">${skill.name}</span>
+            <span class="skill-rail-meta">Lvl ${skill.level}${skill.isActive ? ' • Active' : ''}</span>
+          </span>
+        </button>
+      `;
+    }).join('');
+
+    let detailHtml = '<div class="skill-focus-empty">No skill selected.</div>';
+
+    if (selectedSkill) {
+      const concurrentLoad = game.skillManager.getConcurrentSkillLoad();
+      const concurrentEfficiency = Math.round(game.skillManager.getConcurrentEfficiency() * 100);
+      const progress = selectedSkill.getXPProgress();
+      const xpStr = selectedSkill.level >= 99
         ? 'MAX LEVEL'
-        : `XP: ${Math.floor(progress.current).toLocaleString()} / ${Math.floor(progress.needed).toLocaleString()}`;
-      const xpPercent = skill.level >= 99 ? 100 : Math.min(100, progress.percent);
-
-      // Current activity display
-      let activityStr = '';
+        : `${Math.floor(progress.current).toLocaleString()} / ${Math.floor(progress.needed).toLocaleString()} XP`;
+      const xpPercent = selectedSkill.level >= 99 ? 100 : Math.min(100, progress.percent);
+      const masteryEntries = Object.entries(selectedSkill.masteryData);
+      const masterySummary = masteryEntries.length > 0
+        ? `${masteryEntries.length} tracked activity${masteryEntries.length === 1 ? '' : 'ies'}`
+        : 'No mastery yet';
       const bgHackInfo = game.skillManager.getBackgroundHackInfo();
-      const hasParallelPenalty = bgHackInfo && !skill._isBackgroundHack && skill.isActive;
-      
-      if (skill.isActive && skill.activeAction) {
-        if (skill._isBackgroundHack) {
-          activityStr = `<div class="skill-activity bg-hack-activity">BG Hack: ${skill.activeAction.name} (75%)</div>`;
+      const hasParallelPenalty = bgHackInfo && !selectedSkill._isBackgroundHack && selectedSkill.isActive;
+
+      let activityState = 'Idle';
+      if (selectedSkill.isActive && selectedSkill.activeAction) {
+        if (selectedSkill._isBackgroundHack) {
+          activityState = `Background Hack • ${selectedSkill.activeAction.name} (75%)`;
         } else if (hasParallelPenalty) {
-          activityStr = `<div class="skill-activity parallel-penalty-active">Active: ${skill.activeAction.name} <span style="color: #ff6600;">(75% XP - Parallel Hack Active)</span></div>`;
+          activityState = `Active • ${selectedSkill.activeAction.name} (75% XP while background hack runs)`;
         } else {
-          activityStr = `<div class="skill-activity">Active: ${skill.activeAction.name}</div>`;
+          activityState = `Active • ${selectedSkill.activeAction.name}`;
         }
       }
 
-      div.innerHTML = `
-        <div class="skill-header">
-          <span class="skill-icon">${skill.icon}</span>
-          <div class="skill-info">
-            <h3>${skill.name}</h3>
-            <p>Level ${skill.level}</p>
+      const activityCards = activities.map((act) => {
+        const locked = selectedSkill.level < act.level;
+        const isCurrentAction = selectedSkill.activeAction?.id === act.id;
+        const isCombat = !!act.enemy;
+        const masteryLevel = selectedSkill.getMasteryLevel(act.id);
+        let rewardStr = isCombat ? 'Combat encounter' : 'No listed rewards';
+
+        if (!isCombat && act.rewards) {
+          const parts = [];
+          if (act.rewards.currency) {
+            parts.push(`${act.rewards.currency.min}-${act.rewards.currency.max} E$`);
+          }
+          if (act.rewards.items) {
+            Object.entries(act.rewards.items).forEach(([item, range]) => {
+              parts.push(`${range.min}-${range.max} ${item.replace(/_/g, ' ')}`);
+            });
+          }
+          if (parts.length > 0) rewardStr = parts.join(' • ');
+        }
+
+        return `
+          <div class="skill-activity-card ${locked ? 'locked' : ''} ${isCurrentAction ? 'current' : ''}">
+            <div class="skill-activity-card-top">
+              <div>
+                <div class="skill-activity-name">${act.name}</div>
+                <div class="skill-activity-meta">
+                  <span>${locked ? `Requires Lv.${act.level}` : `Lv.${act.level}+`}</span>
+                  <span>${isCombat ? 'Combat' : `${act.duration}s`}</span>
+                  <span>+${act.xp} XP</span>
+                  ${masteryLevel > 1 ? `<span>Mastery ${masteryLevel}</span>` : ''}
+                </div>
+              </div>
+              <div>
+                ${locked
+                  ? '<span class="badge-maxed">Locked</span>'
+                  : isCurrentAction
+                    ? '<span class="badge-active">Active</span>'
+                    : `<button class="btn-small" data-action="start-activity" data-skill-id="${selectedSkill.id}" data-action-id="${act.id}">Start</button>`}
+              </div>
+            </div>
+            <div class="skill-activity-rewards">${rewardStr}</div>
           </div>
-          <div class="skill-status">
-            ${skill._isBackgroundHack ? '<span class="badge-bg-hack">BG HACK</span>' : skill.isActive ? '<span class="badge-active">ACTIVE</span>' : ''}
-            ${skill.level >= 99 ? '<span class="badge-maxed">MAXED</span>' : ''}
+        `;
+      }).join('');
+
+      detailHtml = `
+        <div class="skill-focus-card ${selectedSkill.isActive ? 'active' : ''}" style="border-color: ${selectedSkill.color}">
+          <div class="skill-focus-header">
+            <div class="skill-focus-title">
+              <span class="skill-icon">${selectedSkill.icon}</span>
+              <div>
+                <h3>${selectedSkill.name}</h3>
+                <p>${selectedSkill.category.toUpperCase()} • Level ${selectedSkill.level}</p>
+              </div>
+            </div>
+            <div class="skill-status">
+              ${selectedSkill._isBackgroundHack ? '<span class="badge-bg-hack">BG HACK</span>' : selectedSkill.isActive ? '<span class="badge-active">ACTIVE</span>' : ''}
+              ${selectedSkill.level >= 99 ? '<span class="badge-maxed">MAXED</span>' : ''}
+            </div>
           </div>
-        </div>
-        <div class="skill-xp">${xpStr}</div>
-        <div class="xp-bar">
-          <div class="xp-fill" style="width: ${xpPercent}%; background: ${skill.color}"></div>
-        </div>
-        <div class="skill-mastery">
-          <small>Mastery Levels: ${Object.entries(skill.masteryData).map(([id, data]) => `${data.level}`).join(', ') || 'None yet'}</small>
-        </div>
-        ${activityStr}
-        <div class="skill-actions">
-          ${skill.level < 99 && !skill._isBackgroundHack ? `<button class="btn-small" data-action="show-activities" data-skill-id="${skill.id}">Activities</button>` : ''}
-          ${skill.isActive ? `<button class="btn-small btn-danger" data-action="stop-skill" data-skill-id="${skill.id}">Stop</button>` : ''}
+
+          <div class="skill-focus-summary">
+            <div class="skill-focus-stat skill-focus-stat-wide">
+              <div class="skill-focus-stat-label">XP Progress</div>
+              <div class="skill-focus-stat-value">${xpStr}</div>
+            </div>
+            <div class="skill-focus-stat skill-focus-stat-wide">
+              <div class="skill-focus-stat-label">State</div>
+              <div class="skill-focus-stat-value">${activityState}</div>
+            </div>
+            <div class="skill-focus-stat">
+              <div class="skill-focus-stat-label">Mastery</div>
+              <div class="skill-focus-stat-value">${masterySummary}</div>
+            </div>
+            <div class="skill-focus-stat">
+              <div class="skill-focus-stat-label">Activities</div>
+              <div class="skill-focus-stat-value">${activities.length}</div>
+            </div>
+            <div class="skill-focus-stat skill-focus-stat-wide skill-load-stat" title="Running multiple grinds at once shares one lightweight game tick. Each extra active grind reduces all non-combat grind payouts, so the game stays efficient without spiking CPU usage.">
+              <div class="skill-focus-stat-label">Parallel Grind Load</div>
+              <div class="skill-focus-stat-value">${concurrentLoad} active grind${concurrentLoad === 1 ? '' : 's'} • ${concurrentEfficiency}% payout efficiency</div>
+            </div>
+          </div>
+
+          <div class="xp-bar skill-focus-bar">
+            <div class="xp-fill" style="width: ${xpPercent}%; background: ${selectedSkill.color}"></div>
+          </div>
+
+          <div class="skill-focus-actions">
+            ${selectedSkill.level < 99 && !selectedSkill._isBackgroundHack ? `<button class="btn-small" data-action="show-activities" data-skill-id="${selectedSkill.id}">Open Picker</button>` : ''}
+            ${selectedSkill.isActive ? `<button class="btn-small btn-danger" data-action="stop-skill" data-skill-id="${selectedSkill.id}">Stop</button>` : ''}
+          </div>
+
+          <div class="skill-focus-activities">
+            <div class="skill-focus-section-title">Available Activities</div>
+            ${activityCards || '<div class="skill-focus-empty">No activities available.</div>'}
+          </div>
         </div>
       `;
-      container.appendChild(div);
-    });
+    }
+
+    container.innerHTML = `
+      <div class="skills-shell">
+        <aside class="skills-rail">
+          <div class="skill-focus-section-title">${this.currentCategory.toUpperCase()}</div>
+          <div class="skill-rail-list">${skillRail}</div>
+        </aside>
+        <section class="skills-detail">${detailHtml}</section>
+      </div>
+    `;
   }
 
   // ==========================================
@@ -556,9 +660,11 @@ export class UI {
         const canSell = item.value > 0;
         const rarityColor = rarityColors[item.rarity] || '#cccccc';
         const rarityClass = item.rarity || 'common';
+        const perkText = item.perks?.length ? item.perks.join(' • ') : (item.description || 'No perks');
         html += `<div class="inventory-item rarity-${rarityClass}" style="border-color: ${rarityColor}">
           <div class="inventory-icon">${item.icon}</div>
           <div class="inventory-name">${item.name}${item.rarity && item.rarity !== 'common' ? ` <span class="rarity-badge" style="color:${rarityColor}">[${item.rarity.toUpperCase()}]</span>` : ''}</div>
+          <div class="inventory-desc" title="${item.tooltip || perkText}">${perkText}</div>
           <div class="inventory-qty">x${item.quantity}</div>
           <div class="inventory-actions">
             ${isEquippable ? `<button class="btn-small" data-action="equip-item" data-item-id="${item.id}">Equip</button>` : ''}
@@ -609,7 +715,8 @@ export class UI {
     const container = document.getElementById('shop-container');
     if (!container) return;
 
-    let html = '<div class="shop-grid">';
+    const shopItems = getRotatingShopItems(game.economy.getCurrency(), game.skillManager.getTotalLevel());
+    let html = `<div class="shop-summary">Curated rollout: ${shopItems.length} items shown from ${SHOP_ITEMS.length}+ total listings. Inventory perks and linked-skill boosts are shown on each card.</div><div class="shop-grid">`;
     const rarityColors = {
       common: '#cccccc',
       uncommon: '#00ff41',
@@ -617,18 +724,19 @@ export class UI {
       epic: '#ff00ff',
       legendary: '#ffff00',
     };
-    SHOP_ITEMS.forEach(item => {
+    shopItems.forEach(item => {
       const canAfford = game.economy.getCurrency() >= item.cost;
       // Look up item rarity from ITEMS
       const itemKey = Object.keys(ITEMS).find(k => ITEMS[k].id === item.id);
       const itemDef = itemKey ? ITEMS[itemKey] : null;
       const rarity = itemDef?.rarity || 'common';
       const rarityColor = rarityColors[rarity] || '#cccccc';
+      const tooltip = getItemTooltip(itemDef) || item.description;
       html += `<div class="shop-item ${canAfford ? '' : 'unaffordable'} rarity-${rarity}">
         <div class="shop-icon">${item.icon}</div>
         <div class="shop-info">
           <div class="shop-name">${item.name}${rarity !== 'common' ? ` <span class="rarity-badge" style="color:${rarityColor}">[${rarity.toUpperCase()}]</span>` : ''}</div>
-          <div class="shop-desc">${item.description}</div>
+          <div class="shop-desc" title="${tooltip}">${tooltip}</div>
           <div class="shop-cost">E$ ${item.cost.toLocaleString()}</div>
         </div>
         <button class="btn-small ${canAfford ? '' : 'disabled'}" 
@@ -941,6 +1049,19 @@ export class UI {
     if (!container) return;
 
     const changelog = [
+      {
+        version: '0.9.0',
+        date: 'April 11, 2026',
+        title: 'The Multi-Grind & Linked Loot Update',
+        entries: [
+          { type: 'feature', text: 'Parallel Multi-Grind System — Up to 3 primary non-combat grinds can now run at the same time, plus background hacking where supported.' },
+          { type: 'balance', text: 'Shared Grind Load Debuff — Every extra simultaneous grind lowers payout efficiency for all active grinds. This keeps the game responsive while making parallel grinding a strategic tradeoff instead of a free speed exploit.' },
+          { type: 'feature', text: 'Linked Item Catalog — The game now supports a massive generated catalog of 1000+ linked items with rarity, pricing, linked skills, and perk metadata.' },
+          { type: 'feature', text: 'Inventory Perk Cards — Inventory entries now display perk text and linked-skill context so loot is readable instead of just being a list of names.' },
+          { type: 'feature', text: 'Rotating Store Rollout — The shop now surfaces a curated slice of the larger item pool based on your progression and available cash, instead of dumping the entire catalog on screen.' },
+          { type: 'feature', text: 'Admin Access Controls — Admin user details now include password reset, session revocation, email/admin access management, and recent login session visibility.' },
+        ],
+      },
       {
         version: '0.8.1',
         date: 'April 10, 2026',
@@ -1304,6 +1425,11 @@ export class UI {
 
     // Render the specific view
     if (view === 'skills') {
+      const game = getGame();
+      if (!this.currentSkill && game) {
+        const firstSkill = game.skillManager.getSkillsByCategory(this.currentCategory)[0];
+        if (firstSkill) this.currentSkill = firstSkill.id;
+      }
       this.updateSkillListings();
     } else if (view === 'inventory') {
       this.renderInventoryView();

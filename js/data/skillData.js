@@ -47,6 +47,42 @@ export const BACKGROUND_HACK_SKILLS = new Set([
 // Background hacking XP efficiency multiplier (75% of normal)
 export const BACKGROUND_HACK_EFFICIENCY = 0.75;
 
+// Concurrent grind load tuning
+export const MULTIGRIND_LOAD_PENALTY = 0.35;
+export const MULTIGRIND_MIN_EFFICIENCY = 0.35;
+export const SHOP_ROLLOUT_SIZE = 36;
+
+export function getMultiGrindEfficiency(activeCount) {
+  const count = Math.max(1, Number(activeCount) || 1);
+  if (count <= 1) return 1;
+  return Math.max(
+    MULTIGRIND_MIN_EFFICIENCY,
+    1 / (1 + ((count - 1) * MULTIGRIND_LOAD_PENALTY))
+  );
+}
+
+export function getItemPerkLines(itemDef) {
+  if (!itemDef) return [];
+
+  const lines = [];
+  if (itemDef.description) lines.push(itemDef.description);
+  if (itemDef.damage) lines.push(`+${itemDef.damage} damage`);
+  if (itemDef.defense) lines.push(`+${itemDef.defense} defense`);
+  if (itemDef.xpBoost) lines.push(`+${Math.round(itemDef.xpBoost * 100)}% XP gain`);
+  if (itemDef.speedBoost) lines.push(`+${Math.round(itemDef.speedBoost * 100)}% action speed`);
+  if (itemDef.lootBoost) lines.push(`+${Math.round(itemDef.lootBoost * 100)}% item drops`);
+  if (itemDef.currencyBoost) lines.push(`+${Math.round(itemDef.currencyBoost * 100)}% currency gain`);
+  if (itemDef.lifeSteal) lines.push(`${Math.round(itemDef.lifeSteal * 100)}% life steal`);
+  if (itemDef.parallelHacking) lines.push('Enables parallel grinding');
+  if (itemDef.linkedSkill) lines.push(`Linked to ${itemDef.linkedSkill.replace(/_/g, ' ')}`);
+
+  return [...new Set(lines)].filter(Boolean);
+}
+
+export function getItemTooltip(itemDef) {
+  return getItemPerkLines(itemDef).join(' • ');
+}
+
 // Skill definitions - 24 skills across 6 categories
 export const SKILLS = {
   // HACKING (4 skills)
@@ -922,8 +958,169 @@ export const SHOP_ITEMS = [
    { id: 'loot_enhancer', name: 'Loot Enhancer Module', icon: '💎', cost: 10000, category: 'cyberware', tier: 4, description: '+20% material drops from all skills', costPerformance: 'exotic' },
    { id: 'wealth_accumulator', name: 'Wealth Accumulator', icon: '💰', cost: 12500, category: 'cyberware', tier: 4, description: '+25% Eurodollars gained', costPerformance: 'exotic' },
    { id: 'neural_daemon', name: 'Neural Daemon', icon: '👾', cost: 8500, category: 'cyberware', tier: 4, description: '+5 damage, +8 defense, parallel hacking', costPerformance: 'exotic' },
-    { id: 'ice_shield', name: 'ICE Shield', icon: '❄️', cost: 7000, category: 'armor', tier: 4, description: '+12 defense, immune to slow effects', costPerformance: 'defensive' },
+     { id: 'ice_shield', name: 'ICE Shield', icon: '❄️', cost: 7000, category: 'armor', tier: 4, description: '+12 defense, immune to slow effects', costPerformance: 'defensive' },
 ];
+
+const GENERATED_ITEM_THEMES = {
+  weapon: {
+    icons: ['🔫', '⚔️', '🔥', '🎯', '🗡️'],
+    prefixes: ['Mono', 'Pulse', 'Ghost', 'Neon', 'Chrome', 'Void', 'Riot', 'Arc'],
+    suffixes: ['Pistol', 'Rifle', 'Blade', 'Carbine', 'Edge', 'Repeater', 'Lance'],
+    basePrice: 320,
+    perkKey: 'damage',
+    perkScale: 1,
+    stackable: false,
+  },
+  armor: {
+    icons: ['🛡️', '🦺', '🖤', '❄️'],
+    prefixes: ['Kevlar', 'Specter', 'Titan', 'Ghost', 'Zero', 'Aegis', 'Riot'],
+    suffixes: ['Plating', 'Weave', 'Harness', 'Shell', 'Coat', 'Mesh'],
+    basePrice: 280,
+    perkKey: 'defense',
+    perkScale: 1,
+    stackable: false,
+  },
+  cyberware: {
+    icons: ['🧠', '⚡', '⏱️', '💎', '💰', '🔗'],
+    prefixes: ['Quantum', 'Neural', 'Hyper', 'Ghost', 'Blackwall', 'Synapse', 'Flux'],
+    suffixes: ['Core', 'Array', 'Link', 'Driver', 'Matrix', 'Thread', 'Module'],
+    basePrice: 420,
+    perkKey: 'xpBoost',
+    perkScale: 0.01,
+    stackable: false,
+  },
+  consumable: {
+    icons: ['💉', '🔬', '🧪', '💊'],
+    prefixes: ['Rapid', 'Combat', 'Nano', 'Ghost', 'Focus', 'Overclock'],
+    suffixes: ['Stim', 'Kit', 'Dose', 'Patch', 'Injector'],
+    basePrice: 90,
+    perkKey: 'currencyBoost',
+    perkScale: 0.01,
+    stackable: true,
+  },
+  material: {
+    icons: ['💾', '🔌', '⚙️', '🧬', '🌐', '📦'],
+    prefixes: ['Shard', 'Core', 'Lattice', 'Quantum', 'Synthetic', 'Signal'],
+    suffixes: ['Fragment', 'Bundle', 'Weave', 'Plate', 'Node', 'Thread'],
+    basePrice: 55,
+    perkKey: 'lootBoost',
+    perkScale: 0.01,
+    stackable: true,
+  },
+};
+
+function generateLinkedCatalog() {
+  const generatedItems = {};
+  const generatedShopItems = [];
+  const skills = Object.values(SKILLS);
+  const rarities = [
+    { key: 'common', valueMult: 1, priceMult: 1, perkMult: 1 },
+    { key: 'uncommon', valueMult: 1.6, priceMult: 1.6, perkMult: 1.4 },
+    { key: 'rare', valueMult: 2.4, priceMult: 2.6, perkMult: 1.9 },
+    { key: 'epic', valueMult: 4.5, priceMult: 5.5, perkMult: 2.7 },
+    { key: 'legendary', valueMult: 8, priceMult: 9, perkMult: 3.8 },
+  ];
+  const types = Object.keys(GENERATED_ITEM_THEMES);
+  const totalGenerated = 1040;
+
+  for (let i = 0; i < totalGenerated; i++) {
+    const skill = skills[i % skills.length];
+    const type = types[i % types.length];
+    const theme = GENERATED_ITEM_THEMES[type];
+    const rarity = rarities[i % rarities.length];
+    const tier = 1 + (i % 6);
+    const baseLevel = 1 + ((i * 7) % 99);
+    const prefix = theme.prefixes[i % theme.prefixes.length];
+    const suffix = theme.suffixes[(Math.floor(i / theme.prefixes.length)) % theme.suffixes.length];
+    const id = `linked_${skill.id}_${type}_${String(i + 1).padStart(4, '0')}`;
+    const icon = theme.icons[(i + tier) % theme.icons.length];
+    const perkMagnitude = Math.max(1, Math.floor((tier + (baseLevel / 18)) * rarity.perkMult));
+    const value = Math.max(10, Math.floor(theme.basePrice * tier * rarity.valueMult + baseLevel * 3));
+    const shopCost = Math.max(25, Math.floor(theme.basePrice * tier * rarity.priceMult + baseLevel * 8));
+    const perkLines = [`Linked to ${skill.name}`];
+    const itemDef = {
+      id,
+      name: `${prefix} ${skill.name} ${suffix}`,
+      type,
+      icon,
+      stackable: theme.stackable,
+      value,
+      rarity: rarity.key,
+      linkedSkill: skill.id,
+      requiredLevel: baseLevel,
+      description: `${skill.name} tuned ${type} with ${rarity.key} circuitry.`
+    };
+
+    if (theme.perkKey === 'damage') {
+      itemDef.damage = perkMagnitude;
+      perkLines.push(`+${perkMagnitude} damage`);
+    } else if (theme.perkKey === 'defense') {
+      itemDef.defense = perkMagnitude;
+      perkLines.push(`+${perkMagnitude} defense`);
+    } else if (theme.perkKey === 'xpBoost') {
+      itemDef.xpBoost = Math.min(0.45, Number((perkMagnitude * theme.perkScale).toFixed(2)));
+      if (tier >= 3) itemDef.parallelHacking = true;
+      perkLines.push(`+${Math.round(itemDef.xpBoost * 100)}% XP gain`);
+    } else if (theme.perkKey === 'currencyBoost') {
+      itemDef.currencyBoost = Math.min(0.35, Number((perkMagnitude * theme.perkScale).toFixed(2)));
+      perkLines.push(`+${Math.round(itemDef.currencyBoost * 100)}% currency gain`);
+    } else if (theme.perkKey === 'lootBoost') {
+      itemDef.lootBoost = Math.min(0.35, Number((perkMagnitude * theme.perkScale).toFixed(2)));
+      perkLines.push(`+${Math.round(itemDef.lootBoost * 100)}% item drops`);
+    }
+
+    if (type === 'cyberware' && tier >= 2) {
+      itemDef.speedBoost = Math.min(0.3, Number((0.03 * tier).toFixed(2)));
+      perkLines.push(`+${Math.round(itemDef.speedBoost * 100)}% action speed`);
+    }
+
+    if (type === 'weapon' && rarity.key === 'legendary') {
+      itemDef.lifeSteal = 0.05;
+      perkLines.push('5% life steal');
+    }
+
+    itemDef.description = perkLines.join(' • ');
+    generatedItems[id.toUpperCase()] = itemDef;
+    generatedShopItems.push({
+      id,
+      name: itemDef.name,
+      icon,
+      cost: shopCost,
+      category: type,
+      tier,
+      description: itemDef.description,
+      costPerformance: rarity.key,
+      quantity: type === 'consumable' || type === 'material' ? (1 + (tier % 4)) : 1,
+      linkedSkill: skill.id,
+      rarity: rarity.key,
+      requiredLevel: baseLevel,
+    });
+  }
+
+  return { generatedItems, generatedShopItems };
+}
+
+const GENERATED_CATALOG = generateLinkedCatalog();
+Object.assign(ITEMS, GENERATED_CATALOG.generatedItems);
+SHOP_ITEMS.push(...GENERATED_CATALOG.generatedShopItems);
+
+export function getRotatingShopItems(currency = 0, totalLevel = 1) {
+  const normalizedLevel = Math.max(1, Number(totalLevel) || 1);
+  const normalizedCurrency = Math.max(0, Number(currency) || 0);
+  const progressionScore = normalizedLevel + Math.floor(normalizedCurrency / 5000);
+
+  const weighted = SHOP_ITEMS
+    .filter(item => (item.requiredLevel || 1) <= normalizedLevel + 20)
+    .sort((a, b) => {
+      const aWeight = Math.abs((a.requiredLevel || 1) - progressionScore);
+      const bWeight = Math.abs((b.requiredLevel || 1) - progressionScore);
+      if (aWeight !== bWeight) return aWeight - bWeight;
+      return a.cost - b.cost;
+    });
+
+  const pool = weighted.length >= SHOP_ROLLOUT_SIZE ? weighted : SHOP_ITEMS;
+  return pool.slice(0, SHOP_ROLLOUT_SIZE);
+}
 
 // ==========================================
 // Passive bonuses from skill levels

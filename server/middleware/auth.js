@@ -104,12 +104,13 @@ export async function requireAdmin(req, res, next) {
  */
 export function checkAdminIP(req, res, next) {
   const clientIP = req.ip || req.connection.remoteAddress;
-  const adminIPRange = /^192\.168\.1\.\d+$/;
+  const adminIPRange = /^(::ffff:)?192\.168\.1\.\d+$/;
+  const localAdminRange = /^(::1|::ffff:127\.0\.0\.1|127\.0\.0\.1|localhost)$/;
   
-  if (!adminIPRange.test(clientIP)) {
+  if (!adminIPRange.test(clientIP) && !localAdminRange.test(clientIP)) {
     console.warn(`Admin access attempt from unauthorized IP: ${clientIP}`);
     return res.status(403).json({ 
-      error: 'Admin access restricted to 192.168.1.X network' 
+      error: 'Admin access restricted to localhost or 192.168.1.X network' 
     });
   }
 

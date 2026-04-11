@@ -1,6 +1,13 @@
 import { events, EVENTS } from './events.js';
 
 const SAVE_KEY = 'netrunner_save';
+const API_BASE = (() => {
+  if (typeof window === 'undefined') return 'http://localhost:3000/api';
+  const host = window.location.hostname || 'localhost';
+  const protocol = window.location.protocol === 'file:' ? 'http:' : window.location.protocol;
+  const apiHost = host === 'localhost' || host === '127.0.0.1' ? 'localhost:3000' : `${host}:3000`;
+  return `${protocol}//${apiHost}/api`;
+})();
 const AUTO_SAVE_INTERVAL = 30000;
 const CURRENT_SAVE_VERSION = 2;
 
@@ -160,7 +167,7 @@ export class SaveManager {
       const playtimeSeconds = this.game.player?.playtimeSeconds || 0;
 
       // Upload to server
-      const response = await fetch('/api/saves/upload', {
+      const response = await fetch(`${API_BASE}/saves/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -197,7 +204,7 @@ export class SaveManager {
     }
 
     try {
-      const response = await fetch('/api/saves/latest', {
+      const response = await fetch(`${API_BASE}/saves/latest`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }

@@ -171,19 +171,6 @@
         <!-- Background Hack Status (shown when cyberware enables it) -->
         <div id="background-hack-status" style="display:none;"></div>
 
-        <!-- Hacker Terminal (auto-scrolling code when hacking) -->
-        <div id="hacker-terminal" class="hacker-terminal" style="display:none;">
-          <div class="hacker-terminal-header">
-            <span class="hacker-terminal-title"><span class="hacker-terminal-dot"></span> NETRUNNER TERMINAL</span>
-            <span class="hacker-terminal-skill" id="hacker-terminal-skill"></span>
-            <button class="hacker-terminal-toggle" id="hacker-terminal-toggle" title="Minimize/Expand">_</button>
-          </div>
-          <div class="hacker-terminal-body" id="hacker-terminal-body">
-            <pre class="hacker-terminal-output" id="hacker-terminal-output"></pre>
-            <div class="hacker-terminal-cursor"></div>
-          </div>
-        </div>
-
         <!-- Combat Status (hidden by default) -->
         <div id="combat-status" style="display:none;"></div>
 
@@ -298,6 +285,19 @@
         <button class="tab-btn" data-view="achievements">Achieve</button>
         <button class="tab-btn" data-view="changelog">Log</button>
       </div>
+
+      <!-- Global Hacker Terminal Dock -->
+      <div id="hacker-terminal" class="hacker-terminal hacker-terminal-docked">
+        <div class="hacker-terminal-header">
+          <span class="hacker-terminal-title"><span class="hacker-terminal-dot"></span> NETRUNNER TERMINAL</span>
+          <span class="hacker-terminal-skill" id="hacker-terminal-skill"></span>
+          <button class="hacker-terminal-toggle" id="hacker-terminal-toggle" title="Hide terminal">Hide</button>
+        </div>
+        <div class="hacker-terminal-body" id="hacker-terminal-body">
+          <pre class="hacker-terminal-output" id="hacker-terminal-output"></pre>
+          <div class="hacker-terminal-cursor"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -340,7 +340,10 @@
       const token = gameAuthState.accessToken;
       if (token) {
         try {
-          await fetch('/api/auth/logout', {
+          const host = window.location.hostname || 'localhost';
+          const protocol = window.location.protocol === 'file:' ? 'http:' : window.location.protocol;
+          const apiHost = host === 'localhost' || host === '127.0.0.1' ? 'localhost:3000' : `${host}:3000`;
+          await fetch(`${protocol}//${apiHost}/api/auth/logout`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,

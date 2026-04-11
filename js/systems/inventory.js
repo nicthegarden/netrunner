@@ -1,5 +1,5 @@
 import { events, EVENTS } from '../engine/events.js';
-import { ITEMS } from '../data/skillData.js';
+import { ITEMS, getItemPerkLines, getItemTooltip } from '../data/skillData.js';
 
 export class Inventory {
   constructor(slots = 100) {
@@ -64,6 +64,9 @@ export class Inventory {
       value: data.item.value || 0,
       rarity: data.item.rarity || 'common',
       description: data.item.description || '',
+      linkedSkill: data.item.linkedSkill || null,
+      perks: getItemPerkLines(data.item),
+      tooltip: getItemTooltip(data.item),
     }));
   }
 

@@ -242,6 +242,7 @@ body::before {
   padding: 15px 20px;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .view-content {
@@ -268,6 +269,228 @@ body::before {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
+}
+
+.skills-shell {
+  display: grid;
+  grid-template-columns: 250px minmax(560px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.skills-rail,
+.skills-detail {
+  min-width: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(15, 15, 30, 0.95));
+  border: 1px solid rgba(0, 255, 65, 0.16);
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: inset 0 0 15px rgba(0, 255, 65, 0.05);
+}
+
+.skills-rail {
+  position: sticky;
+  top: 0;
+}
+
+.skill-focus-section-title {
+  color: #00d4ff;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.skill-rail-list {
+  display: grid;
+  gap: 8px;
+}
+
+.skill-rail-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 65, 0.14);
+  background: rgba(10, 14, 39, 0.65);
+  color: #00ff41;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.skill-rail-item:hover,
+.skill-rail-item.active {
+  border-color: rgba(0, 212, 255, 0.4);
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.skill-rail-icon {
+  font-size: 20px;
+}
+
+.skill-rail-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.skill-rail-name {
+  color: #00d4ff;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.skill-rail-meta {
+  color: #7fffd4;
+  font-size: 10px;
+}
+
+.skill-focus-card {
+  border: 2px solid #00ff41;
+  border-radius: 8px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(12, 16, 36, 0.95), rgba(15, 15, 30, 0.95));
+}
+
+.skill-focus-card.active {
+  box-shadow: 0 0 18px rgba(255, 0, 255, 0.18);
+}
+
+.skill-focus-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.skill-focus-title {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.skill-focus-title h3 {
+  color: #00d4ff;
+  margin-bottom: 3px;
+  font-size: 18px;
+}
+
+.skill-focus-title p {
+  color: #7fffd4;
+  font-size: 11px;
+}
+
+.skill-focus-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.skill-focus-stat-wide {
+  grid-column: span 2;
+}
+
+.skill-focus-stat {
+  background: rgba(10, 14, 39, 0.7);
+  border: 1px solid rgba(0, 255, 65, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.skill-focus-stat-label {
+  color: #7fffd4;
+  font-size: 10px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.skill-focus-stat-value {
+  color: #00ff41;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.skill-load-stat {
+  border-color: rgba(255, 255, 0, 0.18);
+  background: rgba(36, 32, 10, 0.45);
+}
+
+.skill-focus-bar {
+  margin-bottom: 14px;
+}
+
+.skill-focus-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.skill-focus-activities {
+  display: grid;
+  gap: 10px;
+}
+
+.skill-activity-card {
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 65, 0.14);
+  background: rgba(10, 14, 39, 0.72);
+  padding: 12px;
+}
+
+.skill-activity-card.current {
+  border-color: rgba(255, 0, 255, 0.45);
+  box-shadow: 0 0 12px rgba(255, 0, 255, 0.1);
+}
+
+.skill-activity-card.locked {
+  opacity: 0.7;
+}
+
+.skill-activity-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.skill-activity-name {
+  color: #00ff41;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.skill-activity-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: #7fffd4;
+  font-size: 10px;
+}
+
+.skill-activity-rewards {
+  margin-top: 8px;
+  color: #ffff00;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.skill-focus-empty {
+  padding: 20px;
+  border: 1px dashed rgba(0, 255, 65, 0.18);
+  border-radius: 8px;
+  color: #7fffd4;
+  font-size: 12px;
+  background: rgba(10, 14, 39, 0.5);
 }
 
 .skill-card {
@@ -676,6 +899,14 @@ body::before {
   box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
 }
 
+.inventory-desc {
+  color: #7fffd4;
+  font-size: 10px;
+  line-height: 1.5;
+  min-height: 42px;
+  margin-bottom: 6px;
+}
+
 .inventory-icon {
   font-size: 22px;
   margin-bottom: 4px;
@@ -701,6 +932,16 @@ body::before {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 10px;
+}
+
+.shop-summary {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 212, 255, 0.18);
+  background: rgba(0, 212, 255, 0.08);
+  color: #7fe8ff;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .shop-item {
@@ -741,6 +982,7 @@ body::before {
   color: #888;
   font-size: 10px;
   margin-bottom: 3px;
+  line-height: 1.5;
 }
 
 .shop-cost {
@@ -1007,6 +1249,27 @@ body::before {
     grid-template-columns: 1fr;
   }
 
+  .skills-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .skills-rail {
+    position: static;
+  }
+
+  .skill-rail-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .skill-focus-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-focus-stat-wide {
+    grid-column: span 1;
+  }
+
   .shop-grid {
     grid-template-columns: 1fr;
   }
@@ -1042,6 +1305,15 @@ body::before {
 
   .combat-vs {
     font-size: 14px;
+  }
+
+  .skill-rail-list {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-focus-header,
+  .skill-activity-card-top {
+    flex-direction: column;
   }
 }
 
@@ -1847,6 +2119,16 @@ body::before {
   font-family: 'Courier New', Courier, monospace;
 }
 
+.hacker-terminal-docked {
+  flex-shrink: 0;
+  margin: 0 20px 14px;
+  z-index: 20;
+}
+
+.hacker-terminal.is-hidden {
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.08);
+}
+
 .hacker-terminal-header {
   display: flex;
   align-items: center;
@@ -1979,6 +2261,10 @@ body::before {
 
 /* Responsive: shorter terminal on mobile */
 @media (max-width: 768px) {
+  .hacker-terminal-docked {
+    margin: 0 12px 56px;
+  }
+
   .hacker-terminal-body {
     height: 120px;
   }

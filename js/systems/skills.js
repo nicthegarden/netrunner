@@ -1,5 +1,5 @@
 import { events, EVENTS } from '../engine/events.js';
-import { calculateRequiredXP, getTotalXPForLevel, SKILLS, ACTIVITIES, BACKGROUND_HACK_SKILLS, BACKGROUND_HACK_EFFICIENCY } from '../data/skillData.js';
+import { calculateRequiredXP, getTotalXPForLevel, SKILLS, ACTIVITIES, BACKGROUND_HACK_SKILLS, BACKGROUND_HACK_EFFICIENCY, getMultiGrindEfficiency } from '../data/skillData.js';
 
 export class Skill {
   constructor(id, name, category, icon, color, prestige = null, skillManager = null) {
@@ -35,7 +35,7 @@ export class Skill {
     return { current: progressXP, needed: neededXP, percent: neededXP > 0 ? (progressXP / neededXP) * 100 : 100 };
   }
 
-   gainXP(amount, sourceAction = null, prestigeMultiplier = 1.0, equipment = null) {
+    gainXP(amount, sourceAction = null, prestigeMultiplier = 1.0, equipment = null, loadMultiplier = 1.0) {
      if (this.level >= 99) return;
      
      // Apply prestige multiplier first, then mastery bonus (1% per mastery level)
@@ -61,7 +61,7 @@ export class Skill {
        }
      }
      
-     const finalXP = Math.floor(amount * multiplier);
+      const finalXP = Math.floor(amount * multiplier * loadMultiplier);
      this.xp += finalXP;
      
      events.emit(EVENTS.SKILL_XP_GAINED, {
@@ -163,7 +163,7 @@ export class Skill {
     }
   }
 
-  tick() {
+  tick(loadMultiplier = 1.0) {
     if (!this.isActive || !this.activeAction) return null;
     // Combat-type activities don't tick here — combat system handles them
     if (this.activeAction.enemy) return null;
@@ -188,7 +188,7 @@ export class Skill {
     }
 
     if (this.actionProgress >= duration) {
-      const result = this.completeAction();
+      const result = this.completeAction(loadMultiplier);
       this.actionProgress = 0;
       return result;
     }
@@ -196,7 +196,7 @@ export class Skill {
     return null;
   }
 
-    completeAction() {
+    completeAction(loadMultiplier = 1.0) {
       const action = this.activeAction;
       const prestigeMult = this.prestige ? this.prestige.getXPMultiplier() : 1.0;
       
@@ -211,17 +211,24 @@ export class Skill {
       }
       
       const totalMultiplier = bgEfficiency * primaryActivityMultiplier;
-      this.gainXP(Math.floor(action.xp * totalMultiplier), action.id, prestigeMult, this._equipment);
+      this.gainXP(action.xp * totalMultiplier, action.id, prestigeMult, this._equipment, loadMultiplier);
 
       // Build rewards result
-      const rewardResult = { xp: action.xp, items: {}, currency: 0, isBackground: this._isBackgroundHack, primaryMultiplier: primaryActivityMultiplier };
+      const rewardResult = {
+        xp: action.xp,
+        items: {},
+        currency: 0,
+        isBackground: this._isBackgroundHack,
+        primaryMultiplier: primaryActivityMultiplier,
+        loadMultiplier,
+      };
 
       if (action.rewards) {
         // Currency rewards (reduced by background efficiency and/or primary activity penalty)
         if (action.rewards.currency) {
           const range = action.rewards.currency;
           const baseCurrency = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-          rewardResult.currency = Math.floor(baseCurrency * totalMultiplier);
+           rewardResult.currency = Math.floor(baseCurrency * totalMultiplier * loadMultiplier);
         }
         // Item rewards (apply materialDropBonus - Tier 2d, reduced by background efficiency and/or primary penalty)
         if (action.rewards.items) {
@@ -232,7 +239,7 @@ export class Skill {
           
           Object.entries(action.rewards.items).forEach(([itemId, range]) => {
             const qty = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
-            const boostedQty = Math.max(1, Math.floor(qty * dropBonus * totalMultiplier));
+             const boostedQty = Math.max(1, Math.floor(qty * dropBonus * totalMultiplier * loadMultiplier));
             if (boostedQty > 0) {
               rewardResult.items[itemId] = boostedQty;
             }
@@ -288,6 +295,7 @@ export class SkillManager {
     this._passiveStats = null;
     // Background hacking state
     this.backgroundHack = null; // { skillId, actionId } or null
+    this.maxConcurrentGrinds = 3;
     this.initializeSkills();
   }
 
@@ -345,6 +353,29 @@ export class SkillManager {
 
   getSkillsByCategory(category) {
     return Object.values(this.skills).filter(s => s.category === category);
+  }
+
+  getActivePrimarySkills() {
+    return Object.values(this.skills).filter(skill => skill.isActive && !skill._isBackgroundHack);
+  }
+
+  getConcurrentSkillLoad() {
+    const activePrimaries = this.getActivePrimarySkills().filter(skill => !skill.activeAction?.enemy).length;
+    const backgroundCount = this.backgroundHack ? 1 : 0;
+    return Math.max(1, activePrimaries + backgroundCount);
+  }
+
+  getConcurrentEfficiency() {
+    return getMultiGrindEfficiency(this.getConcurrentSkillLoad());
+  }
+
+  canStartAdditionalPrimary(skillId) {
+    const skill = this.skills[skillId];
+    if (!skill) return false;
+    if (skill.activeAction?.enemy) return false;
+    const activePrimaries = this.getActivePrimarySkills().filter(s => !s.activeAction?.enemy);
+    if (skill.isActive && !skill._isBackgroundHack) return true;
+    return activePrimaries.length < this.maxConcurrentGrinds;
   }
 
   // ==========================================
@@ -445,20 +476,23 @@ export class SkillManager {
       }
     }
 
-    return {
-      skill,
-      action: skill.activeAction,
-      progress: skill.actionProgress,
-      duration,
-      efficiency: BACKGROUND_HACK_EFFICIENCY,
-    };
+      return {
+        skill,
+        action: skill.activeAction,
+        progress: skill.actionProgress,
+        duration,
+        efficiency: BACKGROUND_HACK_EFFICIENCY,
+        loadEfficiency: this.getConcurrentEfficiency(),
+      };
   }
 
   tick() {
+    const loadMultiplier = this.getConcurrentEfficiency();
+
     Object.values(this.skills).forEach(skill => {
       // Skip background hack skill here — we tick it separately below
       if (skill._isBackgroundHack) return;
-      skill.tick();
+      skill.tick(loadMultiplier);
       // Reward distribution is handled via events emitted from skill.completeAction()
     });
 
@@ -470,7 +504,7 @@ export class SkillManager {
       } else {
         const bgSkill = this.skills[this.backgroundHack.skillId];
         if (bgSkill && bgSkill.isActive && bgSkill._isBackgroundHack) {
-          bgSkill.tick();
+          bgSkill.tick(loadMultiplier);
         } else {
           // Skill somehow stopped — clean up
           this.backgroundHack = null;
@@ -491,6 +525,7 @@ export class SkillManager {
     return {
       skills: data,
       backgroundHack: this.backgroundHack,
+      maxConcurrentGrinds: this.maxConcurrentGrinds,
     };
   }
 
@@ -513,5 +548,7 @@ export class SkillManager {
         this.backgroundHack = bg;
       }
     }
+
+    this.maxConcurrentGrinds = data.maxConcurrentGrinds || 3;
   }
 }

@@ -3,11 +3,80 @@ import { db, hashPassword } from '../db.js';
 import {
   authenticateToken,
   requireAdmin,
-  checkAdminIP,
-  generateAccessToken
+  checkAdminIP
 } from '../middleware/auth.js';
 
 const router = express.Router();
+
+function summarizeLatestSave(saveData) {
+  if (!saveData || typeof saveData !== 'object') {
+    return {
+      currentCash: null,
+      currentPrestigeLevel: null,
+      currentAverageLevel: null,
+      highestSkillLevel: null,
+      topSkills: []
+    };
+  }
+
+  const skillsPayload = saveData.skills?.skills || saveData.skills || {};
+  const skillEntries = Object.entries(skillsPayload)
+    .map(([skillId, skill]) => ({
+      id: skillId,
+      level: Number(skill?.level) || 1
+    }))
+    .sort((a, b) => b.level - a.level || a.id.localeCompare(b.id));
+
+  const totalLevels = skillEntries.reduce((sum, skill) => sum + skill.level, 0);
+  const averageLevel = skillEntries.length > 0 ? (totalLevels / skillEntries.length) : null;
+
+  return {
+    currentCash: Number(saveData.economy?.currency) || 0,
+    currentPrestigeLevel: Number(saveData.prestige?.level) || 0,
+    currentAverageLevel: averageLevel,
+    highestSkillLevel: skillEntries[0]?.level || 1,
+    topSkills: skillEntries.slice(0, 3)
+  };
+}
+
+function buildUserSummary(row) {
+  let latestSaveSummary = summarizeLatestSave(null);
+
+  if (row.latest_save_data) {
+    try {
+      latestSaveSummary = summarizeLatestSave(JSON.parse(row.latest_save_data));
+    } catch (err) {
+      console.warn(`Failed to parse latest save for user ${row.id}:`, err.message);
+    }
+  }
+
+  return {
+    id: row.id,
+    username: row.username,
+    email: row.email,
+    isAdmin: row.is_admin === 1,
+    isBanned: row.is_banned === 1,
+    banReason: row.ban_reason || null,
+    createdByAdmin: row.created_by_admin === 1,
+    createdAt: row.created_at,
+    lastLogin: row.last_login,
+    stats: {
+      totalXP: row.total_xp || 0,
+      prestigeLevel: row.prestige_level || 0,
+      averageSkillLevel: row.avg_skill_level || 0,
+      playtimeSeconds: row.playtime_seconds || 0,
+      currencyEarned: row.currency_earned || 0,
+      currencySpent: row.currency_spent || 0,
+      combatWins: row.combat_wins || 0,
+      lastSaveTimestamp: row.last_save_timestamp || null,
+      currentCash: latestSaveSummary.currentCash,
+      currentPrestigeLevel: latestSaveSummary.currentPrestigeLevel,
+      currentAverageLevel: latestSaveSummary.currentAverageLevel,
+      highestSkillLevel: latestSaveSummary.highestSkillLevel,
+      topSkills: latestSaveSummary.topSkills
+    }
+  };
+}
 
 // All admin routes require IP check and authentication
 router.use(checkAdminIP);
@@ -21,10 +90,13 @@ router.use(requireAdmin);
 router.get('/admin/users', async (req, res) => {
   try {
     const users = await db.all(
-      `SELECT u.id, u.username, u.email, u.created_at, u.last_login, u.is_banned, u.is_admin,
-              p.total_xp, p.prestige_level, p.playtime_seconds, p.currency_earned
+      `SELECT u.id, u.username, u.email, u.created_at, u.last_login, u.is_banned, u.is_admin, u.ban_reason,
+              p.total_xp, p.prestige_level, p.avg_skill_level, p.playtime_seconds, p.currency_earned,
+              p.currency_spent, p.combat_wins, p.last_save_timestamp,
+              gs.save_data AS latest_save_data
        FROM users u
        LEFT JOIN player_profiles p ON u.id = p.user_id
+       LEFT JOIN game_saves gs ON u.id = gs.user_id AND gs.is_latest = 1
        ORDER BY u.created_at DESC`,
       []
     );
@@ -32,21 +104,7 @@ router.get('/admin/users', async (req, res) => {
     res.json({
       status: 'success',
       count: users.length,
-      users: users.map(u => ({
-        id: u.id,
-        username: u.username,
-        email: u.email,
-        isAdmin: u.is_admin === 1,
-        isBanned: u.is_banned === 1,
-        createdAt: u.created_at,
-        lastLogin: u.last_login,
-        stats: {
-          totalXP: u.total_xp || 0,
-          prestigeLevel: u.prestige_level || 0,
-          playtimeSeconds: u.playtime_seconds || 0,
-          currencyEarned: u.currency_earned || 0
-        }
-      }))
+      users: users.map(buildUserSummary)
     });
 
   } catch (err) {
@@ -64,8 +122,9 @@ router.get('/admin/users/:userId', async (req, res) => {
     const { userId } = req.params;
 
     const user = await db.get(
-      `SELECT u.*, p.* FROM users u
+      `SELECT u.*, p.*, gs.save_data AS latest_save_data FROM users u
        LEFT JOIN player_profiles p ON u.id = p.user_id
+       LEFT JOIN game_saves gs ON u.id = gs.user_id AND gs.is_latest = 1
        WHERE u.id = ?`,
       [userId]
     );
@@ -85,25 +144,21 @@ router.get('/admin/users/:userId', async (req, res) => {
       [userId]
     );
 
+    const sessions = await db.all(
+      `SELECT id, created_at, expires_at, remember_me, ip_address, user_agent
+       FROM sessions
+       WHERE user_id = ?
+       ORDER BY created_at DESC
+       LIMIT 10`,
+      [userId]
+    );
+
     res.json({
       status: 'success',
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        isAdmin: user.is_admin === 1,
-        isBanned: user.is_banned === 1,
-        banReason: user.ban_reason,
-        createdAt: user.created_at,
-        lastLogin: user.last_login,
-        stats: {
-          totalXP: user.total_xp || 0,
-          prestigeLevel: user.prestige_level || 0,
-          playtimeSeconds: user.playtime_seconds || 0
-        }
-      },
+      user: buildUserSummary(user),
       adminActions: actions,
-      recentSaves: saves
+      recentSaves: saves,
+      sessions
     });
 
   } catch (err) {
@@ -303,6 +358,127 @@ router.post('/admin/users/:userId/nerf', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/users/:userId/reset-password
+ * Reset a user's password and revoke active sessions
+ * Body: { newPassword }
+ */
+router.post('/admin/users/:userId/reset-password', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { newPassword } = req.body;
+    const adminId = req.user.id;
+
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    }
+
+    const user = await db.get('SELECT id, username FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    await db.run(
+      'UPDATE users SET password_hash = ? WHERE id = ?',
+      [hashPassword(newPassword), userId]
+    );
+
+    await db.run('DELETE FROM sessions WHERE user_id = ?', [userId]);
+
+    await db.run(
+      `INSERT INTO admin_actions (admin_id, target_user_id, action_type, description, created_at)
+       VALUES (?, ?, 'RESET_PASSWORD', 'Password reset and sessions revoked', datetime('now'))`,
+      [adminId, userId]
+    );
+
+    res.json({
+      status: 'success',
+      message: `Password reset for ${user.username}. Existing sessions revoked.`
+    });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+/**
+ * POST /api/admin/users/:userId/revoke-sessions
+ * Invalidate all active sessions for a user
+ */
+router.post('/admin/users/:userId/revoke-sessions', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const adminId = req.user.id;
+
+    const user = await db.get('SELECT id, username FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    await db.run('DELETE FROM sessions WHERE user_id = ?', [userId]);
+
+    await db.run(
+      `INSERT INTO admin_actions (admin_id, target_user_id, action_type, description, created_at)
+       VALUES (?, ?, 'REVOKE_SESSIONS', 'Revoked all active sessions', datetime('now'))`,
+      [adminId, userId]
+    );
+
+    res.json({
+      status: 'success',
+      message: `Revoked active sessions for ${user.username}`
+    });
+  } catch (err) {
+    console.error('Revoke sessions error:', err);
+    res.status(500).json({ error: 'Failed to revoke sessions' });
+  }
+});
+
+/**
+ * POST /api/admin/users/:userId/update-access
+ * Update login metadata and admin access
+ * Body: { email, isAdmin }
+ */
+router.post('/admin/users/:userId/update-access', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { email = null, isAdmin = false } = req.body;
+    const adminId = req.user.id;
+
+    if (Number(userId) === adminId && !isAdmin) {
+      return res.status(400).json({ error: 'You cannot remove your own admin access' });
+    }
+
+    const user = await db.get('SELECT id, username, email, is_admin FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    await db.run(
+      'UPDATE users SET email = ?, is_admin = ? WHERE id = ?',
+      [email || null, isAdmin ? 1 : 0, userId]
+    );
+
+    await db.run(
+      `INSERT INTO admin_actions (admin_id, target_user_id, action_type, description, details, created_at)
+       VALUES (?, ?, 'UPDATE_ACCESS', ?, ?, datetime('now'))`,
+      [
+        adminId,
+        userId,
+        'Updated login metadata and admin access',
+        JSON.stringify({ previousEmail: user.email, email: email || null, previousAdmin: !!user.is_admin, isAdmin: !!isAdmin })
+      ]
+    );
+
+    res.json({
+      status: 'success',
+      message: `Updated access for ${user.username}`
+    });
+  } catch (err) {
+    console.error('Update access error:', err);
+    res.status(500).json({ error: 'Failed to update access' });
+  }
+});
+
+/**
  * POST /api/admin/ips/block
  * Block an IP address
  * Body: { ipAddress, reason, expiresIn? }
@@ -429,14 +605,23 @@ router.get('/admin/stats', async (req, res) => {
     const bannedUsers = await db.get('SELECT COUNT(*) as count FROM users WHERE is_banned = 1');
     const totalSaves = await db.get('SELECT COUNT(*) as count FROM game_saves');
     const totalPlaytime = await db.get('SELECT SUM(playtime_seconds) as total FROM player_profiles');
+    const activeThisMonth = await db.get(
+      `SELECT COUNT(*) as count FROM users WHERE last_login >= datetime('now', '-30 days')`
+    );
+    const blockedIPs = await db.get(
+      `SELECT COUNT(*) as count FROM blocked_ips WHERE expires_at IS NULL OR expires_at > datetime('now')`
+    );
 
     res.json({
       status: 'success',
       stats: {
         totalUsers: totalUsers.count || 0,
+        activeThisMonth: activeThisMonth.count || 0,
         bannedUsers: bannedUsers.count || 0,
+        bannedCount: bannedUsers.count || 0,
         totalGameSaves: totalSaves.count || 0,
         totalPlaytimeHours: Math.round((totalPlaytime.total || 0) / 3600),
+        blockedIPCount: blockedIPs.count || 0,
         serverTime: new Date().toISOString()
       }
     });

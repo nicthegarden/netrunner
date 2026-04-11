@@ -14,8 +14,21 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
+const allowedOrigins = new Set([
+  'http://localhost:3000',
+  'http://localhost:8000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:8000'
+]);
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:8000', 'http://127.0.0.1:3000', 'http://127.0.0.1:8000', 'http://192.168.1.*'],
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.has(origin) || origin.startsWith('http://192.168.1.')) {
+      cb(null, true);
+      return;
+    }
+    cb(new Error(`CORS blocked origin: ${origin}`));
+  },
   credentials: true
 }));
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -100,4 +113,3 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 export default app;
-

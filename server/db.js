@@ -282,10 +282,52 @@ export async function initializeDatabase() {
     `);
 
     console.log('✓ Database schema initialized');
+    
+    // Create default admin account if it doesn't exist
+    await createDefaultAdmin();
+    
     return db;
   } catch (err) {
     console.error('✗ Database initialization failed:', err);
     throw err;
+  }
+}
+
+/**
+ * Create default admin account (admin/admin) if it doesn't exist
+ */
+async function createDefaultAdmin() {
+  try {
+    const existing = await db.get(
+      'SELECT id FROM users WHERE username = ?',
+      ['admin']
+    );
+    
+    if (!existing) {
+      const passwordHash = hashPassword('admin');
+      await db.run(
+        `INSERT INTO users (username, password_hash, email, is_admin, created_by_admin, created_at)
+         VALUES (?, ?, ?, 1, 0, datetime('now'))`,
+        ['admin', passwordHash, 'admin@localhost']
+      );
+      
+      // Create player profile for admin
+      const adminUser = await db.get(
+        'SELECT id FROM users WHERE username = ?',
+        ['admin']
+      );
+      
+      if (adminUser) {
+        await db.run(
+          `INSERT INTO player_profiles (user_id)
+           VALUES (?)`,
+          [adminUser.id]
+        );
+        console.log('✓ Default admin account created (username: admin, password: admin)');
+      }
+    }
+  } catch (err) {
+    console.error('Warning: Could not create default admin account:', err.message);
   }
 }
 

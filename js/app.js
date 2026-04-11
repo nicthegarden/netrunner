@@ -105,6 +105,12 @@ function navigateToSkill(skillId) {
   closeSidebar();
 }
 
+function focusCurrentSkill(skillId) {
+  if (!ui) return;
+  ui.currentSkill = skillId;
+  ui.navigate('skills', ui.currentCategory);
+}
+
 function navigateToView(view) {
   if (!ui) return;
   ui.navigate(view);
@@ -165,6 +171,11 @@ function startSkillActivity(skillId, actionId) {
     return;
   }
 
+  if (!action.enemy && !game.skillManager.canStartAdditionalPrimary(skillId)) {
+    ui.notify('Concurrent grind cap reached. Stop another grind or use background hacking.', 'error');
+    return;
+  }
+
   // If this skill is currently running as a background hack, stop it first
   if (skill._isBackgroundHack) {
     game.skillManager.stopBackgroundHack();
@@ -193,8 +204,13 @@ function startSkillActivity(skillId, actionId) {
   // For normal activities
   const started = skill.startAction(actionId);
   if (started) {
+    const activeLoad = game.skillManager.getConcurrentSkillLoad();
+    const loadEfficiency = Math.round(game.skillManager.getConcurrentEfficiency() * 100);
     ui.updateSkillListings();
     ui.closePicker();
+    if (!action.enemy && activeLoad > 1) {
+      ui.notify(`Parallel grind started. All running grinds now operate at ${loadEfficiency}% efficiency.`, 'warning');
+    }
   } else {
     ui.notify('Failed to start activity.', 'error');
   }
@@ -497,6 +513,12 @@ document.addEventListener('click', (e) => {
   const showAct = match('[data-action="show-activities"]');
   if (showAct) {
     showActivityPickerForSkill(showAct.dataset.skillId);
+    return;
+  }
+
+  const focusSkill = match('[data-action="focus-skill"]');
+  if (focusSkill) {
+    focusCurrentSkill(focusSkill.dataset.skillId);
     return;
   }
 

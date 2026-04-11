@@ -6,117 +6,152 @@
   <title>NETRUNNER — Admin Panel</title>
   <link rel="stylesheet" href="css/main.css">
   <style>
-    /* Admin Panel Styles */
     body {
       background: #0a0e27;
       color: #00ff41;
       font-family: 'Courier New', monospace;
+      margin: 0;
     }
 
     #admin-container {
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      background:
+        radial-gradient(circle at top right, rgba(0, 212, 255, 0.08), transparent 25%),
+        radial-gradient(circle at bottom left, rgba(255, 0, 255, 0.08), transparent 30%),
+        #0a0e27;
     }
 
     .admin-sidebar {
-      width: 200px;
-      background: #0f1419;
-      border-right: 2px solid #00ff41;
-      padding: 20px;
-      overflow-y: auto;
+      padding: 24px 18px;
+      background: rgba(10, 14, 39, 0.95);
+      border-right: 1px solid rgba(0, 255, 65, 0.22);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
     }
 
-    .admin-sidebar h2 {
+    .admin-brand {
+      border: 1px solid rgba(0, 255, 65, 0.22);
+      background: rgba(15, 20, 25, 0.85);
+      border-radius: 10px;
+      padding: 16px;
+      box-shadow: 0 0 30px rgba(0, 255, 65, 0.08);
+    }
+
+    .admin-brand h1 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      letter-spacing: 2px;
       color: #00ff41;
-      font-size: 16px;
-      margin-top: 0;
-      text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
-      border-bottom: 1px solid #00ff41;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
+      text-shadow: 0 0 8px rgba(0, 255, 65, 0.35);
+    }
+
+    .admin-brand p,
+    .admin-brand small {
+      margin: 0;
+      color: #82ffd0;
+      font-size: 11px;
+      line-height: 1.5;
     }
 
     .admin-nav {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .admin-nav-btn,
+    .admin-logout,
+    .admin-btn,
+    .admin-btn-secondary,
+    .admin-btn-danger {
+      font-family: inherit;
+      font-size: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     }
 
     .admin-nav-btn {
-      padding: 8px 12px;
-      background: transparent;
-      border: 1px solid #00ff41;
-      color: #00ff41;
-      cursor: pointer;
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      transition: all 0.3s;
       text-align: left;
+      padding: 12px 14px;
+      color: #00ff41;
+      background: rgba(15, 20, 25, 0.85);
+      border: 1px solid rgba(0, 255, 65, 0.18);
     }
 
-    .admin-nav-btn:hover {
-      background: #00ff4111;
-      box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
-    }
-
+    .admin-nav-btn:hover,
     .admin-nav-btn.active {
-      background: #00ff41;
-      color: #0a0e27;
-      font-weight: bold;
+      background: linear-gradient(135deg, rgba(0, 255, 65, 0.18), rgba(0, 212, 255, 0.12));
+      box-shadow: 0 0 18px rgba(0, 255, 65, 0.16);
+      transform: translateY(-1px);
+    }
+
+    .admin-sidebar-footer {
+      margin-top: auto;
+      display: grid;
+      gap: 10px;
+    }
+
+    .admin-session {
+      font-size: 11px;
+      color: #82ffd0;
+      line-height: 1.6;
+      border: 1px solid rgba(0, 255, 65, 0.14);
+      padding: 12px;
+      border-radius: 10px;
+      background: rgba(15, 20, 25, 0.7);
     }
 
     .admin-logout {
-      margin-top: auto;
-      padding: 10px 12px;
-      background: #ff1744;
-      border: none;
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 12px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 23, 68, 0.5);
+      background: rgba(255, 23, 68, 0.16);
+      color: #ff7e97;
       text-transform: uppercase;
-      border-radius: 2px;
-      transition: all 0.3s;
-    }
-
-    .admin-logout:hover {
-      background: #ff5252;
+      font-weight: bold;
     }
 
     .admin-main {
-      flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
     }
 
     .admin-header {
-      background: #0f1419;
-      border-bottom: 2px solid #00ff41;
-      padding: 20px;
+      padding: 24px 28px 18px;
+      border-bottom: 1px solid rgba(0, 255, 65, 0.14);
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-end;
+      gap: 12px;
     }
 
-    .admin-header h1 {
+    .admin-header h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
       color: #00ff41;
-      font-size: 20px;
-      margin: 0;
-      text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+      letter-spacing: 2px;
     }
 
-    .admin-user-info {
+    .admin-header p {
+      margin: 0;
+      color: #82ffd0;
+      font-size: 12px;
+      max-width: 680px;
+      line-height: 1.6;
+    }
+
+    .admin-header-meta {
       color: #00d4ff;
       font-size: 12px;
+      white-space: nowrap;
+      text-align: right;
     }
 
     .admin-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
+      padding: 24px 28px 32px;
     }
 
     .admin-view {
@@ -127,1039 +162,1372 @@
       display: block;
     }
 
-    .admin-section {
-      background: #0f1419;
-      border: 1px solid #00ff41;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 4px;
+    .admin-panel {
+      border: 1px solid rgba(0, 255, 65, 0.16);
+      background: rgba(15, 20, 25, 0.88);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
     }
 
-    .admin-section h3 {
-      color: #00ff41;
-      margin-top: 0;
-      border-bottom: 1px solid #00ff4144;
-      padding-bottom: 10px;
-      font-size: 14px;
+    .admin-panel + .admin-panel {
+      margin-top: 18px;
     }
 
-    /* Users View */
-    .user-search {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-
-    .user-search input {
-      flex: 1;
-      padding: 8px;
-      background: #1a1f3a;
-      border: 1px solid #00ff41;
-      color: #00ff41;
-      font-family: 'Courier New', monospace;
-    }
-
-    .user-search button {
-      padding: 8px 16px;
-      background: #00ff41;
-      border: none;
-      color: #0a0e27;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 12px;
-      border-radius: 2px;
-    }
-
-    .user-list {
-      max-height: 400px;
-      overflow-y: auto;
-      border: 1px solid #00ff4144;
-    }
-
-    .user-row {
+    .admin-panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px;
-      border-bottom: 1px solid #00ff4111;
-      font-size: 12px;
+      gap: 12px;
+      margin-bottom: 16px;
     }
 
-    .user-row:hover {
-      background: #00ff4111;
-      cursor: pointer;
-    }
-
-    .user-info {
-      flex: 1;
-    }
-
-    .user-id {
-      color: #00d4ff;
-      font-weight: bold;
-    }
-
-    .user-username {
-      color: #00ff41;
-    }
-
-    .user-created {
-      color: #00ff4177;
-      font-size: 10px;
-    }
-
-    .user-status {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-    }
-
-    .status-badge {
-      padding: 2px 6px;
-      border-radius: 2px;
-      font-size: 10px;
-      font-weight: bold;
-    }
-
-    .status-banned {
-      background: #ff1744;
-      color: white;
-    }
-
-    .status-admin {
-      background: #00d4ff;
-      color: #0a0e27;
-    }
-
-    /* User Detail */
-    .user-detail {
-      background: #0f1419;
-      border: 1px solid #00ff41;
-      padding: 20px;
-      margin-bottom: 20px;
-      border-radius: 4px;
-    }
-
-    .detail-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 1px solid #00ff4144;
-    }
-
-    .detail-header h2 {
-      color: #00ff41;
+    .admin-panel-header h3 {
       margin: 0;
-    }
-
-    .detail-close {
-      background: transparent;
-      border: 1px solid #00ff41;
-      color: #00ff41;
-      padding: 6px 12px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .detail-stats {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .stat-item {
-      background: #1a1f3a;
-      padding: 10px;
-      border-left: 3px solid #00ff41;
-    }
-
-    .stat-label {
-      color: #00ff4177;
-      font-size: 10px;
-      text-transform: uppercase;
-      margin-bottom: 5px;
-    }
-
-    .stat-value {
-      color: #00ff41;
-      font-size: 16px;
-      font-weight: bold;
-    }
-
-    .detail-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #00ff4144;
-    }
-
-    .btn-action {
-      padding: 8px 16px;
-      border: 1px solid #00ff41;
-      background: transparent;
-      color: #00ff41;
-      cursor: pointer;
-      font-size: 12px;
-      text-transform: uppercase;
-      font-weight: bold;
-      transition: all 0.3s;
-    }
-
-    .btn-action:hover {
-      background: #00ff4111;
-    }
-
-    .btn-action.danger {
-      border-color: #ff1744;
-      color: #ff1744;
-    }
-
-    .btn-action.danger:hover {
-      background: #ff174411;
-    }
-
-    .btn-action.success {
-      border-color: #00d4ff;
       color: #00d4ff;
+      font-size: 15px;
+      letter-spacing: 1px;
     }
 
-    .btn-action.success:hover {
-      background: #00d4ff11;
-    }
-
-    /* Create Account */
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    .form-group label {
-      display: block;
-      color: #00ff41;
-      font-size: 12px;
-      margin-bottom: 5px;
-      text-transform: uppercase;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 8px;
-      background: #1a1f3a;
-      border: 1px solid #00ff41;
-      color: #00ff41;
-      font-family: 'Courier New', monospace;
-      box-sizing: border-box;
-    }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: #00d4ff;
-      box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
-    }
-
-    .form-group textarea {
-      width: 100%;
-      padding: 8px;
-      background: #1a1f3a;
-      border: 1px solid #00ff41;
-      color: #00ff41;
-      font-family: 'Courier New', monospace;
-      box-sizing: border-box;
-      resize: vertical;
-      min-height: 80px;
-    }
-
-    .checkbox-group {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-
-    .checkbox-group input[type="checkbox"] {
-      accent-color: #00ff41;
-      cursor: pointer;
-    }
-
-    .checkbox-group label {
-      margin: 0;
-      color: #00ff41;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    .form-message {
-      padding: 10px;
-      border-radius: 2px;
-      font-size: 12px;
-      margin-bottom: 15px;
-    }
-
-    .form-message.error {
-      background: #ff174422;
-      color: #ff1744;
-      border-left: 3px solid #ff1744;
-    }
-
-    .form-message.success {
-      background: #00ff4122;
-      color: #00ff41;
-      border-left: 3px solid #00ff41;
-    }
-
-    /* IP Blocking */
-    .ip-list {
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    .ip-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      border-bottom: 1px solid #00ff4111;
-      font-size: 12px;
-    }
-
-    .ip-address {
-      color: #00ff41;
-      font-weight: bold;
-      font-family: monospace;
-    }
-
-    .ip-reason {
-      color: #00ff4177;
-      flex: 1;
-      margin-left: 20px;
-    }
-
-    .ip-expires {
-      color: #00d4ff;
-      font-size: 10px;
-    }
-
-    /* Audit Log */
-    .audit-list {
-      max-height: 500px;
-      overflow-y: auto;
-    }
-
-    .audit-entry {
-      padding: 10px;
-      border-bottom: 1px solid #00ff4111;
+    .admin-panel-header p {
+      margin: 4px 0 0;
+      color: #82ffd0;
       font-size: 11px;
-      line-height: 1.6;
     }
 
-    .audit-time {
-      color: #00d4ff;
-      font-weight: bold;
-    }
-
-    .audit-action {
-      color: #00ff41;
-    }
-
-    .audit-details {
-      color: #00ff4177;
-      margin-top: 5px;
-    }
-
-    /* Server Stats */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
     }
 
     .stat-card {
-      background: #1a1f3a;
-      padding: 20px;
-      border: 1px solid #00ff4144;
-      border-radius: 4px;
-      text-align: center;
+      padding: 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 255, 65, 0.12);
+      background: linear-gradient(135deg, rgba(26, 31, 58, 0.95), rgba(15, 20, 25, 0.95));
     }
 
     .stat-card-label {
-      color: #00ff4177;
+      color: #7fffd4;
       font-size: 11px;
       text-transform: uppercase;
+      letter-spacing: 1px;
       margin-bottom: 10px;
     }
 
     .stat-card-value {
       color: #00ff41;
-      font-size: 24px;
+      font-size: 28px;
+      font-weight: bold;
+      line-height: 1.1;
+    }
+
+    .stat-card-sub {
+      margin-top: 8px;
+      color: #00d4ff;
+      font-size: 11px;
+    }
+
+    .users-toolbar {
+      display: grid;
+      grid-template-columns: minmax(200px, 2fr) repeat(3, minmax(120px, 1fr)) auto;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .admin-input,
+    .admin-select,
+    .admin-textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid rgba(0, 255, 65, 0.2);
+      background: rgba(26, 31, 58, 0.9);
+      color: #00ff41;
+      border-radius: 8px;
+      padding: 11px 12px;
+      font-family: inherit;
+      font-size: 12px;
+    }
+
+    .admin-textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+
+    .admin-input:focus,
+    .admin-select:focus,
+    .admin-textarea:focus {
+      outline: none;
+      border-color: rgba(0, 212, 255, 0.65);
+      box-shadow: 0 0 18px rgba(0, 212, 255, 0.16);
+    }
+
+    .admin-btn,
+    .admin-btn-secondary,
+    .admin-btn-danger {
+      padding: 11px 14px;
+      font-weight: bold;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+    }
+
+    .admin-btn {
+      background: linear-gradient(135deg, rgba(0, 255, 65, 0.94), rgba(0, 212, 255, 0.82));
+      color: #06111f;
+    }
+
+    .admin-btn-secondary {
+      background: rgba(0, 212, 255, 0.14);
+      border-color: rgba(0, 212, 255, 0.35);
+      color: #7fe8ff;
+    }
+
+    .admin-btn-danger {
+      background: rgba(255, 23, 68, 0.12);
+      border-color: rgba(255, 23, 68, 0.4);
+      color: #ff92a7;
+    }
+
+    .admin-btn:hover,
+    .admin-btn-secondary:hover,
+    .admin-btn-danger:hover,
+    .admin-logout:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+    }
+
+    .users-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .user-list {
+      display: grid;
+      gap: 12px;
+      max-height: 68vh;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .user-card {
+      border-radius: 12px;
+      border: 1px solid rgba(0, 255, 65, 0.12);
+      background: rgba(18, 24, 47, 0.9);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .user-card:hover,
+    .user-card.active {
+      transform: translateY(-1px);
+      border-color: rgba(0, 212, 255, 0.42);
+      box-shadow: 0 0 22px rgba(0, 212, 255, 0.12);
+    }
+
+    .user-card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .user-name {
+      font-size: 16px;
+      color: #00ff41;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .user-meta {
+      color: #7fffd4;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .badge-admin {
+      background: rgba(0, 212, 255, 0.18);
+      color: #7fe8ff;
+      border: 1px solid rgba(0, 212, 255, 0.35);
+    }
+
+    .badge-banned {
+      background: rgba(255, 23, 68, 0.18);
+      color: #ff92a7;
+      border: 1px solid rgba(255, 23, 68, 0.4);
+    }
+
+    .badge-online {
+      background: rgba(0, 255, 65, 0.16);
+      color: #9dffb7;
+      border: 1px solid rgba(0, 255, 65, 0.3);
+    }
+
+    .user-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mini-stat {
+      border-radius: 10px;
+      background: rgba(10, 14, 39, 0.88);
+      border: 1px solid rgba(0, 255, 65, 0.08);
+      padding: 10px;
+    }
+
+    .mini-stat-label {
+      color: #82ffd0;
+      font-size: 10px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .mini-stat-value {
+      color: #00d4ff;
+      font-size: 14px;
       font-weight: bold;
     }
 
-    .loading {
+    .user-detail-panel {
+      position: sticky;
+      top: 24px;
+      min-height: 280px;
+    }
+
+    .detail-empty {
+      color: #82ffd0;
+      font-size: 12px;
+      line-height: 1.7;
+      padding: 20px;
+      border: 1px dashed rgba(0, 255, 65, 0.18);
+      border-radius: 12px;
+      background: rgba(10, 14, 39, 0.55);
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .detail-stat {
+      padding: 12px;
+      border-radius: 10px;
+      background: rgba(10, 14, 39, 0.88);
+      border: 1px solid rgba(0, 255, 65, 0.08);
+    }
+
+    .detail-stat-label {
+      color: #82ffd0;
+      font-size: 10px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .detail-stat-value {
+      color: #00ff41;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .detail-block {
+      margin-top: 16px;
+      border-top: 1px solid rgba(0, 255, 65, 0.12);
+      padding-top: 16px;
+    }
+
+    .detail-block h4 {
+      margin: 0 0 10px;
       color: #00d4ff;
-      font-style: italic;
+      font-size: 13px;
+    }
+
+    .detail-block form {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .session-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .session-row {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 255, 65, 0.08);
+      background: rgba(10, 14, 39, 0.72);
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .pill-list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .skill-pill,
+    .save-pill {
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      background: rgba(0, 212, 255, 0.12);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      color: #7fe8ff;
+    }
+
+    .audit-list,
+    .ip-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .audit-entry,
+    .ip-row {
+      border-radius: 10px;
+      padding: 12px 14px;
+      background: rgba(18, 24, 47, 0.85);
+      border: 1px solid rgba(0, 255, 65, 0.08);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .audit-time,
+    .muted {
+      color: #7fffd4;
+      font-size: 11px;
+    }
+
+    .audit-title,
+    .ip-address {
+      color: #00ff41;
+      font-weight: bold;
+    }
+
+    .admin-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .admin-form-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #82ffd0;
+      font-size: 12px;
+    }
+
+    .form-message {
+      margin-bottom: 14px;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 12px;
+    }
+
+    .form-message.error {
+      background: rgba(255, 23, 68, 0.14);
+      color: #ff92a7;
+      border: 1px solid rgba(255, 23, 68, 0.35);
+    }
+
+    .form-message.success {
+      background: rgba(0, 255, 65, 0.12);
+      color: #9dffb7;
+      border: 1px solid rgba(0, 255, 65, 0.28);
+    }
+
+    .loading,
+    .empty-state {
+      color: #82ffd0;
+      font-size: 12px;
+      padding: 18px;
+      border: 1px dashed rgba(0, 255, 65, 0.18);
+      border-radius: 10px;
+      background: rgba(10, 14, 39, 0.5);
+      text-align: center;
     }
 
     .error {
-      color: #ff1744;
-      padding: 10px;
-      background: #ff174422;
-      border: 1px solid #ff1744;
-      border-radius: 2px;
-      margin-bottom: 15px;
+      color: #ff92a7;
+      font-size: 12px;
+      padding: 14px;
+      border-radius: 10px;
+      background: rgba(255, 23, 68, 0.12);
+      border: 1px solid rgba(255, 23, 68, 0.32);
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 1100px) {
+      .users-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .user-detail-panel {
+        position: static;
+      }
+    }
+
+    @media (max-width: 900px) {
       #admin-container {
-        flex-direction: column;
+        grid-template-columns: 1fr;
       }
 
       .admin-sidebar {
-        width: 100%;
         border-right: none;
-        border-bottom: 2px solid #00ff41;
-        height: 60px;
-        padding: 10px;
-        display: flex;
-        gap: 10px;
-      }
-
-      .admin-sidebar h2 {
-        display: none;
+        border-bottom: 1px solid rgba(0, 255, 65, 0.18);
       }
 
       .admin-nav {
-        flex-direction: row;
-        flex-wrap: wrap;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .admin-nav-btn {
-        flex: 0 0 auto;
+      .admin-header {
+        padding: 18px 18px 14px;
+        flex-direction: column;
+        align-items: flex-start;
       }
 
-      .admin-logout {
-        margin-top: 0;
+      .admin-header-meta {
+        text-align: left;
+        white-space: normal;
       }
 
-      .detail-stats {
+      .admin-content {
+        padding: 18px;
+      }
+
+      .users-toolbar,
+      .admin-form-grid {
         grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .admin-nav {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid,
+      .detail-grid,
+      .user-stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .admin-panel {
+        padding: 14px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid,
+      .detail-grid,
+      .user-stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .badge-row {
+        justify-content: flex-start;
       }
     }
   </style>
 </head>
 <body>
   <div id="admin-container">
-    <!-- Sidebar Navigation -->
-    <div class="admin-sidebar">
-      <h2>ADMIN</h2>
-      <div class="admin-nav">
-        <button class="admin-nav-btn active" onclick="switchView('dashboard')">📊 Dashboard</button>
-        <button class="admin-nav-btn" onclick="switchView('users')">👥 Users</button>
-        <button class="admin-nav-btn" onclick="switchView('create-account')">➕ Create Account</button>
-        <button class="admin-nav-btn" onclick="switchView('ips')">🔒 Block IPs</button>
-        <button class="admin-nav-btn" onclick="switchView('audit')">📋 Audit Log</button>
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <h1>NETRUNNER ADMIN</h1>
+        <p>Moderate accounts, inspect live progression, and manage bans without digging through raw saves.</p>
+        <small id="admin-access-label">Checking access…</small>
       </div>
-      <button class="admin-logout" onclick="handleAdminLogout()">Logout</button>
-    </div>
 
-    <!-- Main Content -->
-    <div class="admin-main">
-      <div class="admin-header">
-        <h1>⚡ NETRUNNER ADMIN PANEL</h1>
-        <div class="admin-user-info">
-          IP: <span id="admin-ip">127.0.0.1</span> | <span id="admin-time">--:--:--</span>
+      <nav class="admin-nav">
+        <button class="admin-nav-btn active" data-view="dashboard">Dashboard</button>
+        <button class="admin-nav-btn" data-view="users">Users</button>
+        <button class="admin-nav-btn" data-view="create-account">Create Account</button>
+        <button class="admin-nav-btn" data-view="ips">Blocked IPs</button>
+        <button class="admin-nav-btn" data-view="audit">Audit Log</button>
+      </nav>
+
+      <div class="admin-sidebar-footer">
+        <div class="admin-session">
+          <div>Operator: <strong id="admin-username">admin</strong></div>
+          <div>IP: <span id="admin-ip">127.0.0.1</span></div>
+          <div>Time: <span id="admin-time">--:--:--</span></div>
         </div>
+        <button class="admin-logout" id="admin-logout-btn">Logout</button>
       </div>
+    </aside>
 
-      <div class="admin-content">
-        <!-- Dashboard View -->
+    <main class="admin-main">
+      <header class="admin-header">
+        <div>
+          <h2>Admin Operations</h2>
+          <p>Review players by current cash, live level summaries, prestige, and moderation status. Tap a user to inspect saves and recent admin actions.</p>
+        </div>
+        <div class="admin-header-meta">
+          Local moderation access enabled for localhost and `192.168.1.x`<br>
+          Current view: <span id="current-view-label">Dashboard</span>
+        </div>
+      </header>
+
+      <section class="admin-content">
         <div id="dashboard" class="admin-view active">
-          <div class="admin-section">
-            <h3>Server Statistics</h3>
-            <div id="stats-container" class="loading">Loading...</div>
-          </div>
-        </div>
-
-        <!-- Users View -->
-        <div id="users" class="admin-view">
-          <div class="admin-section">
-            <h3>User Management</h3>
-            <div class="user-search">
-              <input 
-                type="text" 
-                id="user-search" 
-                placeholder="Search username or ID..."
-                onkeyup="searchUsers()"
-              />
-              <button onclick="loadUsers()">🔄 Refresh</button>
+          <div class="admin-panel">
+            <div class="admin-panel-header">
+              <div>
+                <h3>Server Overview</h3>
+                <p>High-level numbers for account health and moderation load.</p>
+              </div>
+              <button class="admin-btn-secondary" id="refresh-dashboard-btn">Refresh</button>
             </div>
-            <div id="users-container" class="user-list loading">Loading users...</div>
-            <div id="user-detail" style="margin-top: 20px;"></div>
+            <div id="stats-container" class="loading">Loading statistics…</div>
           </div>
         </div>
 
-        <!-- Create Account View -->
+        <div id="users" class="admin-view">
+          <div class="admin-panel">
+            <div class="admin-panel-header">
+              <div>
+                <h3>User Management</h3>
+                <p>Search, filter, and inspect real current cash and level summaries from each user’s latest save.</p>
+              </div>
+              <button class="admin-btn-secondary" id="refresh-users-btn">Refresh</button>
+            </div>
+
+            <div class="users-toolbar">
+              <input id="user-search" class="admin-input" type="text" placeholder="Search username, email, or ID">
+              <select id="user-status-filter" class="admin-select">
+                <option value="all">All statuses</option>
+                <option value="banned">Banned only</option>
+                <option value="active">Not banned</option>
+              </select>
+              <select id="user-role-filter" class="admin-select">
+                <option value="all">All roles</option>
+                <option value="admin">Admins only</option>
+                <option value="player">Players only</option>
+              </select>
+              <select id="user-sort" class="admin-select">
+                <option value="cash">Sort by cash</option>
+                <option value="xp">Sort by XP</option>
+                <option value="avg-level">Sort by avg level</option>
+                <option value="last-login">Sort by last login</option>
+                <option value="created">Sort by created</option>
+              </select>
+              <button class="admin-btn" id="clear-user-filters-btn">Clear</button>
+            </div>
+
+            <div class="users-layout">
+              <div id="users-container" class="user-list loading">Loading users…</div>
+              <div id="user-detail" class="user-detail-panel admin-panel">
+                <div class="detail-empty">Select a user to inspect current cash, live average level, recent saves, and moderation history.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div id="create-account" class="admin-view">
-          <div class="admin-section">
-            <h3>Create New Account</h3>
+          <div class="admin-panel">
+            <div class="admin-panel-header">
+              <div>
+                <h3>Create New Account</h3>
+                <p>Provision a player directly from the server. Admin-created accounts are logged to the audit trail.</p>
+              </div>
+            </div>
             <div id="create-message"></div>
-            <form onsubmit="handleCreateAccount(event)">
-              <div class="form-group">
-                <label for="new-username">Username</label>
-                <input 
-                  id="new-username" 
-                  type="text" 
-                  placeholder="Enter username (3-32 chars)"
-                  required
-                />
+            <form id="create-account-form" class="admin-form-grid">
+              <div>
+                <label class="muted" for="new-username">Username</label>
+                <input id="new-username" class="admin-input" type="text" required minlength="3" maxlength="32" placeholder="3-32 characters">
               </div>
-              <div class="form-group">
-                <label for="new-password">Password</label>
-                <input 
-                  id="new-password" 
-                  type="password" 
-                  placeholder="Enter password (6+ chars)"
-                  required
-                />
+              <div>
+                <label class="muted" for="new-password">Password</label>
+                <input id="new-password" class="admin-input" type="password" required minlength="6" placeholder="At least 6 characters">
               </div>
-              <div class="form-group">
-                <label for="new-email">Email (optional)</label>
-                <input 
-                  id="new-email" 
-                  type="email" 
-                  placeholder="Enter email"
-                />
+              <div class="full">
+                <label class="muted" for="new-email">Email</label>
+                <input id="new-email" class="admin-input" type="email" placeholder="Optional email address">
               </div>
-              <div class="checkbox-group">
-                <input id="new-admin" type="checkbox" />
-                <label for="new-admin">Make this account an admin</label>
+              <div class="full checkbox-group">
+                <input id="new-admin" type="checkbox">
+                <label for="new-admin">Grant admin privileges</label>
               </div>
-              <button type="submit" class="btn-action success" style="width: 100%;">Create Account</button>
+              <div class="full">
+                <button type="submit" class="admin-btn">Create Account</button>
+              </div>
             </form>
           </div>
         </div>
 
-        <!-- IP Blocking View -->
         <div id="ips" class="admin-view">
-          <div class="admin-section">
-            <h3>Block IP Address</h3>
+          <div class="admin-panel">
+            <div class="admin-panel-header">
+              <div>
+                <h3>Block IP Address</h3>
+                <p>Block problem IPs temporarily or permanently. Localhost is allowed for development.</p>
+              </div>
+            </div>
             <div id="ip-message"></div>
-            <form onsubmit="handleBlockIP(event)">
-              <div class="form-group">
-                <label for="block-ip">IP Address</label>
-                <input 
-                  id="block-ip" 
-                  type="text" 
-                  placeholder="e.g., 192.168.1.100"
-                  pattern="\d+\.\d+\.\d+\.\d+"
-                  required
-                />
+            <form id="block-ip-form" class="admin-form-grid">
+              <div>
+                <label class="muted" for="block-ip">IP Address</label>
+                <input id="block-ip" class="admin-input" type="text" required placeholder="e.g. 192.168.1.50">
               </div>
-              <div class="form-group">
-                <label for="block-reason">Reason</label>
-                <textarea 
-                  id="block-reason" 
-                  placeholder="Why is this IP being blocked?"
-                  required
-                ></textarea>
+              <div>
+                <label class="muted" for="block-duration">Duration (hours, 0 = permanent)</label>
+                <input id="block-duration" class="admin-input" type="number" min="0" value="0">
               </div>
-              <div class="form-group">
-                <label for="block-duration">Duration (0 = permanent)</label>
-                <input 
-                  id="block-duration" 
-                  type="number" 
-                  placeholder="Hours (0 for permanent)"
-                  value="0"
-                  min="0"
-                />
+              <div class="full">
+                <label class="muted" for="block-reason">Reason</label>
+                <textarea id="block-reason" class="admin-textarea" required placeholder="Why are you blocking this IP?"></textarea>
               </div>
-              <button type="submit" class="btn-action danger" style="width: 100%;">Block IP</button>
+              <div class="full">
+                <button type="submit" class="admin-btn-danger">Block IP</button>
+              </div>
             </form>
           </div>
 
-          <div class="admin-section">
-            <h3>Blocked IPs</h3>
-            <div id="blocked-ips" class="ip-list loading">Loading...</div>
+          <div class="admin-panel">
+            <div class="admin-panel-header">
+              <div>
+                <h3>Blocked IPs</h3>
+                <p>Currently active blocks.</p>
+              </div>
+              <button class="admin-btn-secondary" id="refresh-ips-btn">Refresh</button>
+            </div>
+            <div id="blocked-ips" class="ip-list loading">Loading blocked IPs…</div>
           </div>
         </div>
 
-        <!-- Audit Log View -->
         <div id="audit" class="admin-view">
-          <div class="admin-section">
-            <h3>Audit Log (Last 100 Actions)</h3>
-            <button onclick="loadAuditLog()" style="margin-bottom: 15px;" class="btn-action">🔄 Refresh</button>
-            <div id="audit-container" class="audit-list loading">Loading...</div>
+          <div class="admin-panel">
+            <div class="admin-panel-header">
+              <div>
+                <h3>Audit Log</h3>
+                <p>Latest 100 admin actions across account creation, bans, resets, and moderation changes.</p>
+              </div>
+              <button class="admin-btn-secondary" id="refresh-audit-btn">Refresh</button>
+            </div>
+            <div id="audit-container" class="audit-list loading">Loading audit log…</div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   </div>
 
   <script>
-    const ADMIN_API = '/api/admin';
+    const ADMIN_API = (() => {
+      const host = window.location.hostname || 'localhost';
+      const protocol = window.location.protocol === 'file:' ? 'http:' : window.location.protocol;
+      const apiHost = host === 'localhost' || host === '127.0.0.1' ? 'localhost:3000' : `${host}:3000`;
+      return `${protocol}//${apiHost}/api/admin`;
+    })();
+
     let adminToken = null;
     let currentUser = null;
     let allUsers = [];
+    let selectedUserId = null;
+    let currentView = 'dashboard';
 
-    // Initialize admin panel
-    function init() {
-      checkAdminAccess();
-      updateTime();
-      setInterval(updateTime, 1000);
+    function showMessage(targetId, message, type) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      target.innerHTML = `<div class="form-message ${type}">${message}</div>`;
     }
 
-    // Check if admin is authorized
-    function checkAdminAccess() {
-      const clientIP = location.hostname === 'localhost' ? '127.0.0.1' : location.hostname;
-      document.getElementById('admin-ip').textContent = clientIP;
+    function clearMessage(targetId) {
+      const target = document.getElementById(targetId);
+      if (target) target.innerHTML = '';
+    }
 
-      // For testing: show warning if not on 192.168.1.X
-      if (!clientIP.match(/192\.168\.1\.\d+/)) {
-        console.warn('⚠️ Admin panel restricted to 192.168.1.X network. Current IP:', clientIP);
-        console.log('For local testing, access will work if proxied correctly.');
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString();
+    }
+
+    function formatCurrency(value) {
+      if (value === null || value === undefined) return 'N/A';
+      return `E$ ${formatNumber(value)}`;
+    }
+
+    function formatSeconds(seconds) {
+      const total = Math.max(0, Number(seconds) || 0);
+      const hours = Math.floor(total / 3600);
+      const minutes = Math.floor((total % 3600) / 60);
+      return `${hours}h ${minutes}m`;
+    }
+
+    function formatDate(value) {
+      if (!value) return 'Never';
+      return new Date(value).toLocaleString();
+    }
+
+    function formatAverageLevel(value) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+      return Number(value).toFixed(1);
+    }
+
+    function getAuthHeaders(includeJson = true) {
+      const headers = {};
+      if (includeJson) headers['Content-Type'] = 'application/json';
+      if (adminToken) headers['Authorization'] = `Bearer ${adminToken}`;
+      return headers;
+    }
+
+    async function apiRequest(path, options = {}) {
+      const response = await fetch(`${ADMIN_API}${path}`, {
+        ...options,
+        headers: {
+          ...getAuthHeaders(options.body !== undefined),
+          ...(options.headers || {})
+        }
+      });
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (error) {
+        data = null;
       }
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Request failed');
+      }
+
+      return data;
     }
 
-    // Update time display
     function updateTime() {
-      const now = new Date();
-      const time = now.toLocaleTimeString('en-US', { hour12: false });
-      document.getElementById('admin-time').textContent = time;
+      document.getElementById('admin-time').textContent = new Date().toLocaleTimeString('en-US', { hour12: false });
     }
 
-    // Switch views
-    function switchView(view) {
-      // Hide all views
-      document.querySelectorAll('.admin-view').forEach(el => {
-        el.classList.remove('active');
-      });
-
-      // Remove active class from buttons
-      document.querySelectorAll('.admin-nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-      });
-
-      // Show selected view
-      document.getElementById(view).classList.add('active');
-      event.target.classList.add('active');
-
-      // Load data for view
-      if (view === 'dashboard') loadDashboard();
-      else if (view === 'users') loadUsers();
-      else if (view === 'ips') loadBlockedIPs();
-      else if (view === 'audit') loadAuditLog();
+    function getClientIPLabel() {
+      const host = location.hostname || 'localhost';
+      if (host === 'localhost') return '127.0.0.1';
+      return host;
     }
 
-    // Load dashboard stats
-    async function loadDashboard() {
-      const container = document.getElementById('stats-container');
-      container.classList.add('loading');
-      container.innerHTML = '<div class="loading">Loading statistics...</div>';
+    function checkAdminAccess() {
+      adminToken = localStorage.getItem('netrunner_access_token');
+      const rawUser = localStorage.getItem('netrunner_user');
+
+      if (!adminToken) {
+        window.location.href = '/auth.html';
+        return false;
+      }
 
       try {
-        const response = await fetch(`${ADMIN_API}/stats`);
-        const data = await response.json();
+        currentUser = rawUser ? JSON.parse(rawUser) : null;
+      } catch (error) {
+        currentUser = null;
+      }
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load stats');
-        }
+      document.getElementById('admin-username').textContent = currentUser?.username || 'admin';
+      document.getElementById('admin-ip').textContent = getClientIPLabel();
+      document.getElementById('admin-access-label').textContent = 'Localhost and 192.168.1.x admin access enabled.';
+      return true;
+    }
 
+    function setActiveView(view) {
+      currentView = view;
+      document.getElementById('current-view-label').textContent = view.replace('-', ' ');
+
+      document.querySelectorAll('.admin-view').forEach((el) => {
+        el.classList.toggle('active', el.id === view);
+      });
+
+      document.querySelectorAll('.admin-nav-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.view === view);
+      });
+
+      if (view === 'dashboard') loadDashboard();
+      if (view === 'users') loadUsers();
+      if (view === 'ips') loadBlockedIPs();
+      if (view === 'audit') loadAuditLog();
+    }
+
+    async function loadDashboard() {
+      const container = document.getElementById('stats-container');
+      container.className = 'loading';
+      container.innerHTML = 'Loading statistics…';
+
+      try {
+        const data = await apiRequest('/stats', { method: 'GET' });
         const stats = data.stats || {};
-        container.classList.remove('loading');
+        container.className = '';
         container.innerHTML = `
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-card-label">Total Users</div>
-              <div class="stat-card-value">${stats.totalUsers || 0}</div>
+              <div class="stat-card-value">${formatNumber(stats.totalUsers)}</div>
+              <div class="stat-card-sub">Accounts in the auth database</div>
             </div>
             <div class="stat-card">
-              <div class="stat-card-label">Active This Month</div>
-              <div class="stat-card-value">${stats.activeThisMonth || 0}</div>
+              <div class="stat-card-label">Active 30 Days</div>
+              <div class="stat-card-value">${formatNumber(stats.activeThisMonth)}</div>
+              <div class="stat-card-sub">Players who logged in recently</div>
             </div>
             <div class="stat-card">
               <div class="stat-card-label">Banned Accounts</div>
-              <div class="stat-card-value">${stats.bannedCount || 0}</div>
+              <div class="stat-card-value">${formatNumber(stats.bannedCount || stats.bannedUsers)}</div>
+              <div class="stat-card-sub">Moderation load right now</div>
             </div>
             <div class="stat-card">
               <div class="stat-card-label">Blocked IPs</div>
-              <div class="stat-card-value">${stats.blockedIPCount || 0}</div>
+              <div class="stat-card-value">${formatNumber(stats.blockedIPCount)}</div>
+              <div class="stat-card-sub">Active network restrictions</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-label">Game Saves</div>
+              <div class="stat-card-value">${formatNumber(stats.totalGameSaves)}</div>
+              <div class="stat-card-sub">Server-side snapshots stored</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card-label">Total Playtime</div>
+              <div class="stat-card-value">${formatNumber(stats.totalPlaytimeHours)}h</div>
+              <div class="stat-card-sub">Combined player time</div>
             </div>
           </div>
         `;
       } catch (error) {
-        container.classList.remove('loading');
-        container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+        container.className = 'error';
+        container.textContent = error.message;
       }
     }
 
-    // Load users list
-    async function loadUsers() {
-      const container = document.getElementById('users-container');
-      container.classList.add('loading');
-      container.innerHTML = '<div class="loading">Loading users...</div>';
+    function getFilteredUsers() {
+      const search = document.getElementById('user-search').value.trim().toLowerCase();
+      const status = document.getElementById('user-status-filter').value;
+      const role = document.getElementById('user-role-filter').value;
+      const sort = document.getElementById('user-sort').value;
 
-      try {
-        const response = await fetch(`${ADMIN_API}/users`);
-        const data = await response.json();
+      const filtered = allUsers.filter((user) => {
+        const searchBlob = `${user.id} ${user.username} ${user.email || ''}`.toLowerCase();
+        if (search && !searchBlob.includes(search)) return false;
+        if (status === 'banned' && !user.isBanned) return false;
+        if (status === 'active' && user.isBanned) return false;
+        if (role === 'admin' && !user.isAdmin) return false;
+        if (role === 'player' && user.isAdmin) return false;
+        return true;
+      });
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load users');
-        }
+      const safeNumber = (value) => Number(value || 0);
+      filtered.sort((a, b) => {
+        if (sort === 'xp') return safeNumber(b.stats.totalXP) - safeNumber(a.stats.totalXP);
+        if (sort === 'avg-level') return safeNumber(b.stats.currentAverageLevel ?? b.stats.averageSkillLevel) - safeNumber(a.stats.currentAverageLevel ?? a.stats.averageSkillLevel);
+        if (sort === 'last-login') return new Date(b.lastLogin || 0) - new Date(a.lastLogin || 0);
+        if (sort === 'created') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        return safeNumber(b.stats.currentCash) - safeNumber(a.stats.currentCash);
+      });
 
-        allUsers = data.users || [];
-        displayUsers(allUsers);
-      } catch (error) {
-        container.classList.remove('loading');
-        container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-      }
+      return filtered;
     }
 
-    // Display users
-    function displayUsers(users) {
+    function renderUserList() {
+      const users = getFilteredUsers();
       const container = document.getElementById('users-container');
-      container.classList.remove('loading');
 
       if (users.length === 0) {
-        container.innerHTML = '<div style="color: #00ff4177; padding: 20px; text-align: center;">No users found</div>';
+        container.className = 'user-list';
+        container.innerHTML = '<div class="empty-state">No users matched the current filters.</div>';
         return;
       }
 
-      container.innerHTML = users.map(user => `
-        <div class="user-row" onclick="viewUserDetail(${user.id})">
-          <div class="user-info">
-            <div class="user-id">ID: ${user.id}</div>
-            <div class="user-username">${user.username}</div>
-            <div class="user-created">${new Date(user.created_at).toLocaleDateString()}</div>
-          </div>
-          <div class="user-status">
-            ${user.is_admin ? '<span class="status-badge status-admin">ADMIN</span>' : ''}
-            ${user.is_banned ? '<span class="status-badge status-banned">BANNED</span>' : ''}
-          </div>
-        </div>
-      `).join('');
+      container.className = 'user-list';
+      container.innerHTML = users.map((user) => {
+        const stats = user.stats || {};
+        const isRecent = user.lastLogin && (Date.now() - new Date(user.lastLogin).getTime()) < (7 * 24 * 3600 * 1000);
+        const topSkillText = (stats.topSkills || []).map((skill) => `${skill.id.replace(/_/g, ' ')} ${skill.level}`).join(' • ');
+        return `
+          <article class="user-card ${selectedUserId === user.id ? 'active' : ''}" data-user-id="${user.id}">
+            <div class="user-card-top">
+              <div>
+                <div class="user-name">${user.username}</div>
+                <div class="user-meta">ID ${user.id}${user.email ? ` • ${user.email}` : ''}<br>Last login: ${formatDate(user.lastLogin)}</div>
+              </div>
+              <div class="badge-row">
+                ${user.isAdmin ? '<span class="badge badge-admin">Admin</span>' : ''}
+                ${user.isBanned ? '<span class="badge badge-banned">Banned</span>' : ''}
+                ${isRecent ? '<span class="badge badge-online">Recent</span>' : ''}
+              </div>
+            </div>
+            <div class="user-stats-grid">
+              <div class="mini-stat">
+                <div class="mini-stat-label">Current Cash</div>
+                <div class="mini-stat-value">${formatCurrency(stats.currentCash)}</div>
+              </div>
+              <div class="mini-stat">
+                <div class="mini-stat-label">Avg Level</div>
+                <div class="mini-stat-value">${formatAverageLevel(stats.currentAverageLevel ?? stats.averageSkillLevel)}</div>
+              </div>
+              <div class="mini-stat">
+                <div class="mini-stat-label">Prestige</div>
+                <div class="mini-stat-value">${formatNumber(stats.currentPrestigeLevel ?? stats.prestigeLevel)}</div>
+              </div>
+              <div class="mini-stat">
+                <div class="mini-stat-label">Total XP</div>
+                <div class="mini-stat-value">${formatNumber(stats.totalXP)}</div>
+              </div>
+            </div>
+            <div class="user-meta">Top skills: ${topSkillText || 'No save uploaded yet'}</div>
+          </article>
+        `;
+      }).join('');
     }
 
-    // View user details
-    async function viewUserDetail(userId) {
-      const detailDiv = document.getElementById('user-detail');
-      detailDiv.innerHTML = '<div class="loading">Loading user details...</div>';
+    async function loadUsers() {
+      const container = document.getElementById('users-container');
+      container.className = 'user-list loading';
+      container.innerHTML = 'Loading users…';
 
       try {
-        const response = await fetch(`${ADMIN_API}/users/${userId}`);
-        const data = await response.json();
+        const data = await apiRequest('/users', { method: 'GET' });
+        allUsers = data.users || [];
+        renderUserList();
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load user');
+        if (selectedUserId) {
+          const exists = allUsers.some((user) => user.id === selectedUserId);
+          if (exists) {
+            await viewUserDetail(selectedUserId, false);
+          } else {
+            selectedUserId = null;
+            document.getElementById('user-detail').innerHTML = '<div class="detail-empty">Selected user no longer exists.</div>';
+          }
         }
-
-        const user = data.user;
-        detailDiv.innerHTML = `
-          <div class="user-detail">
-            <div class="detail-header">
-              <div>
-                <h2>${user.username}</h2>
-                <div style="color: #00ff4177; font-size: 12px;">ID: ${user.id} | Created: ${new Date(user.created_at).toLocaleString()}</div>
-              </div>
-              <button class="detail-close" onclick="document.getElementById('user-detail').innerHTML = ''">Close</button>
-            </div>
-
-            <div class="detail-stats">
-              <div class="stat-item">
-                <div class="stat-label">Total XP</div>
-                <div class="stat-value">${user.total_xp?.toLocaleString() || 0}</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">Prestige Level</div>
-                <div class="stat-value">${user.prestige_level || 0}</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">Playtime</div>
-                <div class="stat-value">${formatSeconds(user.playtime_seconds || 0)}</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">Currency Earned</div>
-                <div class="stat-value">E$ ${(user.currency_earned || 0).toLocaleString()}</div>
-              </div>
-            </div>
-
-            <div class="detail-actions">
-              ${!user.is_banned ? `
-                <button class="btn-action danger" onclick="banUser(${user.id})">Ban Account</button>
-              ` : `
-                <button class="btn-action success" onclick="unbanUser(${user.id})">Unban Account</button>
-              `}
-              <button class="btn-action danger" onclick="resetUserProgress(${user.id})">Reset Progress</button>
-              <button class="btn-action danger" onclick="nerfUserStats(${user.id})">Nerf Stats</button>
-            </div>
-          </div>
-        `;
       } catch (error) {
-        detailDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+        container.className = 'error';
+        container.textContent = error.message;
       }
     }
 
-    // Search users
-    function searchUsers() {
-      const query = document.getElementById('user-search').value.toLowerCase();
-      const filtered = allUsers.filter(user => 
-        user.username.toLowerCase().includes(query) ||
-        user.id.toString().includes(query)
-      );
-      displayUsers(filtered);
+    function renderUserDetail(user, actions = [], recentSaves = [], sessions = []) {
+      const detail = document.getElementById('user-detail');
+      const stats = user.stats || {};
+      const topSkills = stats.topSkills || [];
+
+      detail.innerHTML = `
+        <div class="admin-panel-header">
+          <div>
+            <h3>${user.username}</h3>
+            <p>ID ${user.id}${user.email ? ` • ${user.email}` : ''}</p>
+          </div>
+          <div class="badge-row">
+            ${user.isAdmin ? '<span class="badge badge-admin">Admin</span>' : ''}
+            ${user.isBanned ? '<span class="badge badge-banned">Banned</span>' : ''}
+          </div>
+        </div>
+
+        <div class="detail-grid">
+          <div class="detail-stat"><div class="detail-stat-label">Current Cash</div><div class="detail-stat-value">${formatCurrency(stats.currentCash)}</div></div>
+          <div class="detail-stat"><div class="detail-stat-label">Live Avg Level</div><div class="detail-stat-value">${formatAverageLevel(stats.currentAverageLevel ?? stats.averageSkillLevel)}</div></div>
+          <div class="detail-stat"><div class="detail-stat-label">Highest Skill</div><div class="detail-stat-value">${formatNumber(stats.highestSkillLevel)}</div></div>
+          <div class="detail-stat"><div class="detail-stat-label">Prestige</div><div class="detail-stat-value">${formatNumber(stats.currentPrestigeLevel ?? stats.prestigeLevel)}</div></div>
+          <div class="detail-stat"><div class="detail-stat-label">Total XP</div><div class="detail-stat-value">${formatNumber(stats.totalXP)}</div></div>
+          <div class="detail-stat"><div class="detail-stat-label">Playtime</div><div class="detail-stat-value">${formatSeconds(stats.playtimeSeconds)}</div></div>
+          <div class="detail-stat"><div class="detail-stat-label">Lifetime Earned</div><div class="detail-stat-value">${formatCurrency(stats.currencyEarned)}</div></div>
+          <div class="detail-stat"><div class="detail-stat-label">Lifetime Spent</div><div class="detail-stat-value">${formatCurrency(stats.currencySpent)}</div></div>
+        </div>
+
+        <div class="detail-block">
+          <h4>Account Snapshot</h4>
+          <div class="muted">Created: ${formatDate(user.createdAt)}</div>
+          <div class="muted">Last login: ${formatDate(user.lastLogin)}</div>
+          <div class="muted">Last save: ${formatDate(stats.lastSaveTimestamp)}</div>
+          <div class="muted">Combat wins: ${formatNumber(stats.combatWins)}</div>
+          <div class="muted">Created by admin: ${user.createdByAdmin ? 'Yes' : 'No'}</div>
+          ${user.banReason ? `<div class="muted">Ban reason: ${user.banReason}</div>` : ''}
+        </div>
+
+        <div class="detail-block">
+          <h4>Login Access</h4>
+          <form onsubmit="event.preventDefault(); updateUserAccess(${user.id});">
+            <input id="access-email-${user.id}" class="admin-input" type="email" value="${user.email || ''}" placeholder="Email address">
+            <label class="checkbox-group"><input id="access-admin-${user.id}" type="checkbox" ${user.isAdmin ? 'checked' : ''}> Admin access</label>
+            <button type="submit" class="admin-btn-secondary">Update Access</button>
+          </form>
+          <form onsubmit="event.preventDefault(); resetUserPassword(${user.id});">
+            <input id="access-password-${user.id}" class="admin-input" type="password" minlength="6" placeholder="New password">
+            <button type="submit" class="admin-btn-danger">Reset Password</button>
+          </form>
+        </div>
+
+        <div class="detail-block">
+          <h4>Active Sessions</h4>
+          ${sessions.length > 0 ? `<div class="session-list">${sessions.map((session) => `
+            <div class="session-row">
+              <div>Created: ${formatDate(session.created_at)}</div>
+              <div>Expires: ${formatDate(session.expires_at)}</div>
+              <div>Remember me: ${session.remember_me ? 'Yes' : 'No'}</div>
+              <div>IP: ${session.ip_address || 'Unknown'}</div>
+              <div>User-Agent: ${session.user_agent || 'Unknown device'}</div>
+            </div>
+          `).join('')}</div>` : '<div class="muted">No active sessions.</div>'}
+          <div class="pill-list" style="margin-top: 10px;">
+            <button class="admin-btn-secondary" onclick="revokeUserSessions(${user.id})">Revoke All Sessions</button>
+          </div>
+        </div>
+
+        <div class="detail-block">
+          <h4>Top Skills</h4>
+          <div class="pill-list">
+            ${topSkills.length > 0 ? topSkills.map((skill) => `<span class="skill-pill">${skill.id.replace(/_/g, ' ')} Lv.${skill.level}</span>`).join('') : '<span class="muted">No save data available yet.</span>'}
+          </div>
+        </div>
+
+        <div class="detail-block">
+          <h4>Recent Saves</h4>
+          <div class="pill-list">
+            ${recentSaves.length > 0 ? recentSaves.map((save) => `<span class="save-pill">#${save.id} • ${new Date(save.save_timestamp).toLocaleDateString()} • ${formatSeconds(save.playtime_seconds)}</span>`).join('') : '<span class="muted">No server saves yet.</span>'}
+          </div>
+        </div>
+
+        <div class="detail-block">
+          <h4>Recent Admin Actions</h4>
+          ${actions.length > 0 ? actions.map((action) => `
+            <div class="audit-entry">
+              <div class="audit-time">${formatDate(action.created_at)}</div>
+              <div class="audit-title">${action.action_type}</div>
+              ${action.description ? `<div>${action.description}</div>` : ''}
+            </div>
+          `).join('') : '<div class="muted">No admin actions recorded for this user.</div>'}
+        </div>
+
+        <div class="detail-block">
+          <h4>Moderation Actions</h4>
+          <div class="pill-list" style="margin-bottom: 12px;">
+            ${!user.isBanned
+              ? `<button class="admin-btn-danger" onclick="banUser(${user.id})">Ban Account</button>`
+              : `<button class="admin-btn-secondary" onclick="unbanUser(${user.id})">Unban Account</button>`}
+            <button class="admin-btn-danger" onclick="resetUserProgress(${user.id})">Reset Progress</button>
+            <button class="admin-btn-secondary" onclick="nerfUserStats(${user.id})">Nerf 50%</button>
+          </div>
+        </div>
+      `;
     }
 
-    // Ban user
+    async function viewUserDetail(userId, shouldScroll = true) {
+      selectedUserId = Number(userId);
+      renderUserList();
+
+      const detail = document.getElementById('user-detail');
+      detail.innerHTML = '<div class="loading">Loading user details…</div>';
+
+      try {
+        const data = await apiRequest(`/users/${userId}`, { method: 'GET' });
+        renderUserDetail(data.user, data.adminActions || [], data.recentSaves || [], data.sessions || []);
+        if (shouldScroll && window.innerWidth < 1100) {
+          detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } catch (error) {
+        detail.innerHTML = `<div class="error">${error.message}</div>`;
+      }
+    }
+
     async function banUser(userId) {
-      const reason = prompt('Reason for banning:');
+      const reason = window.prompt('Reason for banning this user:', 'Violation of server rules');
       if (!reason) return;
 
       try {
-        const response = await fetch(`${ADMIN_API}/users/${userId}/ban`, {
+        await apiRequest(`/users/${userId}/ban`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ reason })
         });
-
-        const data = await response.json();
-        alert(data.message || 'User banned');
-        loadUsers();
-        viewUserDetail(userId);
+        await loadUsers();
+        await viewUserDetail(userId, false);
       } catch (error) {
-        alert('Error: ' + error.message);
+        window.alert(error.message);
       }
     }
 
-    // Unban user
     async function unbanUser(userId) {
       try {
-        const response = await fetch(`${ADMIN_API}/users/${userId}/unban`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        const data = await response.json();
-        alert(data.message || 'User unbanned');
-        loadUsers();
-        viewUserDetail(userId);
+        await apiRequest(`/users/${userId}/unban`, { method: 'POST' });
+        await loadUsers();
+        await viewUserDetail(userId, false);
       } catch (error) {
-        alert('Error: ' + error.message);
+        window.alert(error.message);
       }
     }
 
-    // Reset user progress
     async function resetUserProgress(userId) {
-      if (!confirm('Are you sure? This will delete all saves and reset progress.')) return;
+      if (!window.confirm('Reset this user\'s progress? This deletes all non-backup saves and wipes profile stats.')) return;
 
       try {
-        const response = await fetch(`${ADMIN_API}/users/${userId}/reset-progress`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        const data = await response.json();
-        alert(data.message || 'Progress reset');
-        viewUserDetail(userId);
+        await apiRequest(`/users/${userId}/reset-progress`, { method: 'POST' });
+        await loadUsers();
+        await viewUserDetail(userId, false);
       } catch (error) {
-        alert('Error: ' + error.message);
+        window.alert(error.message);
       }
     }
 
-    // Nerf user stats
     async function nerfUserStats(userId) {
-      const multiplier = prompt('Apply multiplier (e.g., 0.5 for 50% nerf):', '0.5');
-      if (!multiplier) return;
+      const reason = window.prompt('Optional nerf reason:', 'Admin balance adjustment') || 'Admin balance adjustment';
 
       try {
-        const response = await fetch(`${ADMIN_API}/users/${userId}/nerf`, {
+        await apiRequest(`/users/${userId}/nerf`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ multiplier: parseFloat(multiplier) })
+          body: JSON.stringify({ xpMultiplier: 0.5, currencyMultiplier: 0.5, reason })
         });
-
-        const data = await response.json();
-        alert(data.message || 'Stats nerfed');
-        viewUserDetail(userId);
+        await loadUsers();
+        await viewUserDetail(userId, false);
       } catch (error) {
-        alert('Error: ' + error.message);
+        window.alert(error.message);
       }
     }
 
-    // Create account
+    async function updateUserAccess(userId) {
+      const email = document.getElementById(`access-email-${userId}`).value.trim() || null;
+      const isAdmin = document.getElementById(`access-admin-${userId}`).checked;
+
+      try {
+        await apiRequest(`/users/${userId}/update-access`, {
+          method: 'POST',
+          body: JSON.stringify({ email, isAdmin })
+        });
+        await loadUsers();
+        await viewUserDetail(userId, false);
+      } catch (error) {
+        window.alert(error.message);
+      }
+    }
+
+    async function resetUserPassword(userId) {
+      const newPassword = document.getElementById(`access-password-${userId}`).value;
+      if (!newPassword) {
+        window.alert('Enter a new password first.');
+        return;
+      }
+
+      try {
+        await apiRequest(`/users/${userId}/reset-password`, {
+          method: 'POST',
+          body: JSON.stringify({ newPassword })
+        });
+        document.getElementById(`access-password-${userId}`).value = '';
+        await viewUserDetail(userId, false);
+      } catch (error) {
+        window.alert(error.message);
+      }
+    }
+
+    async function revokeUserSessions(userId) {
+      if (!window.confirm('Revoke all active sessions for this user?')) return;
+
+      try {
+        await apiRequest(`/users/${userId}/revoke-sessions`, { method: 'POST' });
+        await viewUserDetail(userId, false);
+      } catch (error) {
+        window.alert(error.message);
+      }
+    }
+
     async function handleCreateAccount(event) {
       event.preventDefault();
+      clearMessage('create-message');
 
-      const username = document.getElementById('new-username').value;
+      const username = document.getElementById('new-username').value.trim();
       const password = document.getElementById('new-password').value;
-      const email = document.getElementById('new-email').value || null;
+      const email = document.getElementById('new-email').value.trim() || null;
       const isAdmin = document.getElementById('new-admin').checked;
 
-      const messageDiv = document.getElementById('create-message');
-
       try {
-        const response = await fetch(`${ADMIN_API}/users/create`, {
+        const data = await apiRequest('/users/create', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, email, is_admin: isAdmin })
+          body: JSON.stringify({ username, password, email, isAdmin })
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          messageDiv.innerHTML = `<div class="form-message error">${data.error || 'Creation failed'}</div>`;
-          return;
-        }
-
-        messageDiv.innerHTML = `<div class="form-message success">Account created! ID: ${data.userId}</div>`;
+        showMessage('create-message', `${data.message} (ID ${data.user.id})`, 'success');
         event.target.reset();
+        await loadUsers();
       } catch (error) {
-        messageDiv.innerHTML = `<div class="form-message error">Error: ${error.message}</div>`;
+        showMessage('create-message', error.message, 'error');
       }
     }
 
-    // Block IP
     async function handleBlockIP(event) {
       event.preventDefault();
+      clearMessage('ip-message');
 
-      const ip = document.getElementById('block-ip').value;
-      const reason = document.getElementById('block-reason').value;
-      const duration = parseInt(document.getElementById('block-duration').value) || 0;
-
-      const messageDiv = document.getElementById('ip-message');
+      const ipAddress = document.getElementById('block-ip').value.trim();
+      const reason = document.getElementById('block-reason').value.trim();
+      const hours = Number(document.getElementById('block-duration').value || 0);
+      const expiresIn = hours > 0 ? hours * 60 * 60 * 1000 : null;
 
       try {
-        const response = await fetch(`${ADMIN_API}/ips/block`, {
+        const data = await apiRequest('/ips/block', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ip_address: ip, reason, duration_hours: duration })
+          body: JSON.stringify({ ipAddress, reason, expiresIn })
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          messageDiv.innerHTML = `<div class="form-message error">${data.error || 'Block failed'}</div>`;
-          return;
-        }
-
-        messageDiv.innerHTML = `<div class="form-message success">IP blocked successfully</div>`;
+        showMessage('ip-message', data.message, 'success');
         event.target.reset();
-        loadBlockedIPs();
+        document.getElementById('block-duration').value = '0';
+        await loadBlockedIPs();
       } catch (error) {
-        messageDiv.innerHTML = `<div class="form-message error">Error: ${error.message}</div>`;
+        showMessage('ip-message', error.message, 'error');
       }
     }
 
-    // Load blocked IPs
     async function loadBlockedIPs() {
       const container = document.getElementById('blocked-ips');
-      container.classList.add('loading');
-      container.innerHTML = '<div class="loading">Loading blocked IPs...</div>';
+      container.className = 'ip-list loading';
+      container.innerHTML = 'Loading blocked IPs…';
 
       try {
-        const response = await fetch(`${ADMIN_API}/ips/blocked`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load IPs');
-        }
-
-        const ips = data.blocked_ips || [];
-        container.classList.remove('loading');
+        const data = await apiRequest('/ips/blocked', { method: 'GET' });
+        const ips = data.blockedIPs || [];
 
         if (ips.length === 0) {
-          container.innerHTML = '<div style="color: #00ff4177; padding: 20px; text-align: center;">No blocked IPs</div>';
+          container.className = 'ip-list';
+          container.innerHTML = '<div class="empty-state">No blocked IPs right now.</div>';
           return;
         }
 
-        container.innerHTML = ips.map(ip => `
+        container.className = 'ip-list';
+        container.innerHTML = ips.map((ip) => `
           <div class="ip-row">
             <div>
               <div class="ip-address">${ip.ip_address}</div>
-              <div class="ip-reason">${ip.reason}</div>
+              <div>${ip.reason || 'No reason recorded'}</div>
+              <div class="muted">Created: ${formatDate(ip.created_at)} • Expires: ${ip.expires_at ? formatDate(ip.expires_at) : 'Permanent'}</div>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div class="ip-expires">${ip.expires_at ? new Date(ip.expires_at).toLocaleString() : 'Permanent'}</div>
-              <button class="btn-action" onclick="unblockIP('${ip.ip_address}')" style="padding: 4px 8px; font-size: 10px;">Remove</button>
-            </div>
+            <button class="admin-btn-secondary" onclick="unblockIP('${ip.ip_address}')">Unblock</button>
           </div>
         `).join('');
       } catch (error) {
-        container.classList.remove('loading');
-        container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+        container.className = 'error';
+        container.textContent = error.message;
       }
     }
 
-    // Unblock IP
-    async function unblockIP(ip) {
-      if (!confirm(`Unblock ${ip}?`)) return;
+    async function unblockIP(ipAddress) {
+      if (!window.confirm(`Unblock ${ipAddress}?`)) return;
 
       try {
-        const response = await fetch(`${ADMIN_API}/ips/${encodeURIComponent(ip)}/unblock`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        const data = await response.json();
-        alert(data.message || 'IP unblocked');
-        loadBlockedIPs();
+        await apiRequest(`/ips/${encodeURIComponent(ipAddress)}/unblock`, { method: 'POST' });
+        await loadBlockedIPs();
       } catch (error) {
-        alert('Error: ' + error.message);
+        window.alert(error.message);
       }
     }
 
-    // Load audit log
     async function loadAuditLog() {
       const container = document.getElementById('audit-container');
-      container.classList.add('loading');
-      container.innerHTML = '<div class="loading">Loading audit log...</div>';
+      container.className = 'audit-list loading';
+      container.innerHTML = 'Loading audit log…';
 
       try {
-        const response = await fetch(`${ADMIN_API}/actions`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load audit log');
-        }
-
+        const data = await apiRequest('/actions', { method: 'GET' });
         const actions = data.actions || [];
-        container.classList.remove('loading');
 
         if (actions.length === 0) {
-          container.innerHTML = '<div style="color: #00ff4177; padding: 20px; text-align: center;">No audit log entries</div>';
+          container.className = 'audit-list';
+          container.innerHTML = '<div class="empty-state">No audit entries yet.</div>';
           return;
         }
 
-        container.innerHTML = actions.map(action => `
+        container.className = 'audit-list';
+        container.innerHTML = actions.map((action) => `
           <div class="audit-entry">
-            <div><span class="audit-time">${new Date(action.created_at).toLocaleString()}</span></div>
-            <div class="audit-action">👤 ${action.admin_id} → ${action.action_type}</div>
-            ${action.description ? `<div class="audit-details">${action.description}</div>` : ''}
+            <div class="audit-time">${formatDate(action.created_at)}</div>
+            <div class="audit-title">${action.admin_name || `Admin #${action.admin_id || '?'}`} → ${action.action_type}</div>
+            <div>${action.description || 'No description recorded'}</div>
+            ${action.target_name ? `<div class="muted">Target: ${action.target_name}</div>` : ''}
           </div>
         `).join('');
       } catch (error) {
-        container.classList.remove('loading');
-        container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+        container.className = 'error';
+        container.textContent = error.message;
       }
     }
 
-    // Format seconds to human readable
-    function formatSeconds(seconds) {
-      const hours = Math.floor(seconds / 3600);
-      const minutes = Math.floor((seconds % 3600) / 60);
-      return `${hours}h ${minutes}m`;
-    }
-
-    // Handle admin logout
     function handleAdminLogout() {
-      if (confirm('Logout from admin panel?')) {
-        window.location.href = '/auth.html';
-      }
+      if (!window.confirm('Logout from the admin panel?')) return;
+      localStorage.removeItem('netrunner_access_token');
+      localStorage.removeItem('netrunner_refresh_token');
+      localStorage.removeItem('netrunner_user');
+      window.location.href = '/auth.html';
     }
 
-    // Initialize on page load
+    function wireEvents() {
+      document.querySelectorAll('.admin-nav-btn').forEach((btn) => {
+        btn.addEventListener('click', () => setActiveView(btn.dataset.view));
+      });
+
+      document.getElementById('refresh-dashboard-btn').addEventListener('click', loadDashboard);
+      document.getElementById('refresh-users-btn').addEventListener('click', loadUsers);
+      document.getElementById('refresh-ips-btn').addEventListener('click', loadBlockedIPs);
+      document.getElementById('refresh-audit-btn').addEventListener('click', loadAuditLog);
+      document.getElementById('admin-logout-btn').addEventListener('click', handleAdminLogout);
+
+      document.getElementById('create-account-form').addEventListener('submit', handleCreateAccount);
+      document.getElementById('block-ip-form').addEventListener('submit', handleBlockIP);
+
+      ['user-search', 'user-status-filter', 'user-role-filter', 'user-sort'].forEach((id) => {
+        document.getElementById(id).addEventListener('input', renderUserList);
+        document.getElementById(id).addEventListener('change', renderUserList);
+      });
+
+      document.getElementById('clear-user-filters-btn').addEventListener('click', () => {
+        document.getElementById('user-search').value = '';
+        document.getElementById('user-status-filter').value = 'all';
+        document.getElementById('user-role-filter').value = 'all';
+        document.getElementById('user-sort').value = 'cash';
+        renderUserList();
+      });
+
+      document.getElementById('users-container').addEventListener('click', (event) => {
+        const card = event.target.closest('.user-card');
+        if (!card) return;
+        viewUserDetail(card.dataset.userId);
+      });
+    }
+
+    async function init() {
+      if (!checkAdminAccess()) return;
+      wireEvents();
+      updateTime();
+      setInterval(updateTime, 1000);
+      loadDashboard();
+    }
+
+    window.banUser = banUser;
+    window.unbanUser = unbanUser;
+    window.resetUserProgress = resetUserProgress;
+    window.nerfUserStats = nerfUserStats;
+    window.updateUserAccess = updateUserAccess;
+    window.resetUserPassword = resetUserPassword;
+    window.revokeUserSessions = revokeUserSessions;
+    window.unblockIP = unblockIP;
+
     window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
