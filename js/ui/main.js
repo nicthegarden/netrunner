@@ -1100,6 +1100,7 @@ export class UI {
           { type: 'feature', text: 'Parallel Multi-Grind System — Up to 3 primary non-combat grinds can now run at the same time, plus background hacking where supported.' },
           { type: 'balance', text: 'Shared Grind Load Debuff — Every extra simultaneous grind lowers payout efficiency for all active grinds, now tuned to a softer progression-friendly curve: 82% at 2 grinds, 68% at 3 grinds, and 58% at 4 grinds.' },
           { type: 'feature', text: 'Linked Item Catalog — The game now supports a massive generated catalog of 1000+ linked items with rarity, pricing, linked skills, and perk metadata.' },
+          { type: 'feature', text: 'Handcrafted Cyberpunk Gear — Added curated new weapons, armor, cyberware, and consumables like Neuroclock Jack, Blackwall Router Spine, Ghostwalk Cloak, Corpo Breaker, and more to support faster grinds, stronger combat, and richer skill-themed builds.' },
           { type: 'feature', text: 'Inventory Perk Cards — Inventory entries now display perk text and linked-skill context so loot is readable instead of just being a list of names.' },
           { type: 'feature', text: 'Rotating Store Rollout — The shop now surfaces a curated slice of the larger item pool based on your progression, current skill focus, and available cash, with timed market rotation, category filters, and pagination.' },
           { type: 'feature', text: 'Admin Access Controls — Admin user details now include password reset, session revocation, email/admin access management, and recent login session visibility.' },
