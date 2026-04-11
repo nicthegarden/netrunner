@@ -1,167 +1,296 @@
-# 🎮 NETRUNNER — Cyberpunk Idle Game
+# NETRUNNER
 
-A Melvor Idle-style grind fest with a futuristic cyberpunk aesthetic. Hack systems, fight enemies, craft cyberware, and climb the ranks in a gritty digital world.
+NETRUNNER is a browser-based cyberpunk idle game with a local Node/SQLite backend for authentication, admin tools, and server-backed saves. The client is built with vanilla HTML, CSS, and ES modules. There is no frontend build step.
 
-## 🚀 Quick Start
+## What You Get
 
-1. Open `index.html` in your browser (just double-click it or drag it to a browser window)
-2. Start grinding!
+- 24 skills across hacking, netrunning, street, tech, fixer, and ripper categories
+- Idle progression with offline gains, mastery, combat, crafting, inventory, and prestige
+- Multi-grind support with shared efficiency debuffs
+- A bottom-docked terminal that shows both live hacking output and gameplay event feed
+- Authenticated accounts with persistent server-side saves
+- Admin dashboard for user management, moderation, account access changes, and audit visibility
+- Rotating shop inventory, large item catalog support, curated cyberpunk gear, and achievements
 
-## 🎯 Features
+## Tech Stack
 
-### 24 Skills Across 6 Categories
+- Frontend: vanilla HTML, CSS, JavaScript ES modules
+- Backend: Node.js, Express, SQLite
+- Storage: browser `localStorage` plus SQLite save persistence
+- Auth: JWT access and refresh token flow
+- Build tooling: none required for the frontend
 
-**HACKING (🔓)**
-- Intrusion — Break into systems
-- Decryption — Process stolen data
-- ICE Breaking — Defeat security AI
-- Daemon Coding — Write combat buffs
+## Quick Start
 
-**NETRUNNING (🌊)**
-- Deep Dive — Explore deeper NET layers
-- Data Mining — Extract passive income
-- Black ICE Combat — Fight hostile AI
-- Neural Surfing — Unlock new zones
+### Prerequisites
 
-**STREET (🤺)**
-- Combat — Fight enemies for loot
-- Stealth — Pickpocket and infiltrate
-- Street Cred — Build reputation
-- Smuggling — Transport contraband
+- Node.js 18+ recommended
+- npm
+- Python 3 recommended for the static frontend server
 
-**TECH (🦾)**
-- Cyberware Crafting — Build implants
-- Weapon Modding — Upgrade weapons
-- Vehicle Tuning — Faster smuggling
-- Drone Engineering — Passive gathering
+### Start Everything
 
-**FIXER (💰)**
-- Trading — Buy low, sell high
-- Corpo Infiltration — High-risk heists
-- Info Brokering — Sell intelligence
-- Fencing — Sell stolen goods
+From the repository root:
 
-**RIPPER (🔌)**
-- Cyberware Installation — Stat boosts
-- Biotech — Create healing items
-- Neural Enhancement — Boost XP rates
-- Chrome Surgery — High-end implants
-
-### Core Mechanics
-
-- **99 Levels** per skill (RuneScape-style XP curve)
-- **Mastery System** — Sub-levels for each activity type
-- **Auto-save** every 30 seconds (localStorage)
-- **Offline Progress** — Up to 24 hours offline grinding
-- **Combat System** — Real-time battles with enemies
-- **Inventory** — Collect and manage resources
-- **Achievements** — Unlock milestones
-- **Save/Export** — Copy your save code to share or backup
-
-## 🎨 Cyberpunk Aesthetic
-
-- Neon green/magenta/cyan color scheme
-- Terminal monospace font
-- CRT scanline overlay
-- Glowing text shadows
-- Dark vaporwave background
-
-## 💾 Save System
-
-**Auto-Save:** Game saves every 30 seconds to localStorage
-
-**Manual Save:** Click the "💾 Save" button in the header
-
-**Export Save:** 
-- Click "📥 Export Save" in the sidebar
-- Your save is copied as a base64 string
-- Share it or keep it as backup
-
-**Import Save:**
-- Click "📤 Import Save"
-- Paste your save code
-- Game reloads with your data
-
-**Reset:**
-- Click "⚠️ Reset Game" to start fresh
-- Warning: This deletes your current save!
-
-## 🕹️ How to Play
-
-1. **Pick a skill** from the sidebar
-2. **Click "Start"** to begin an action
-3. **Watch the progress bar** fill up
-4. **Gain XP and loot** when complete
-5. **Level up skills** to unlock harder activities
-6. **Combine skills** for synergies (higher hacking helps stealth, etc.)
-7. **Reach level 99** for bragging rights
-
-### Combat
-
-- **Click "Start"** on Combat skill
-- **Auto-attack** enemies in real-time
-- **Defeat enemies** for XP and loot
-- **Get stronger** and fight tougher foes
-
-## 🛠️ Technical Details
-
-- **No build step required** — vanilla HTML/CSS/JS
-- **No frameworks** — pure ES6 modules
-- **Browser storage** — saves to localStorage
-- **Modular architecture** — easy to extend
-- **Event-driven** — decoupled game systems
-
-## 📁 Project Structure
-
+```bash
+chmod +x start-all.sh serve.sh
+./start-all.sh
 ```
+
+What the script does:
+
+- installs backend dependencies in `server/` if needed
+- starts the backend on `http://localhost:3000`
+- starts the static frontend on `http://localhost:8000`
+- prints the game, auth, and admin URLs
+- keeps both processes attached until you press `Ctrl+C`
+
+Compatibility note:
+
+- `./serve.sh` still works and now forwards to `./start-all.sh`
+
+## Local URLs
+
+- Game: `http://localhost:8000/index.html`
+- Login/Register: `http://localhost:8000/auth.html`
+- Admin Panel: `http://localhost:8000/admin.html`
+- Backend Health Check: `http://localhost:3000/health`
+
+## Manual Startup
+
+If you prefer to start services manually:
+
+### Backend
+
+```bash
+cd server
+npm install
+npm run server
+```
+
+### Frontend
+
+```bash
+python3 -m http.server 8000
+```
+
+You can also use `python -m SimpleHTTPServer 8000` or `npx http-server -p 8000` if needed.
+
+## Environment and Ports
+
+The launcher supports custom ports:
+
+```bash
+PORT=8080 AUTH_PORT=3001 ./start-all.sh
+```
+
+Defaults:
+
+- `PORT=8000`
+- `AUTH_PORT=3000`
+
+## How Authentication Works
+
+- `auth.html` handles login and registration
+- access tokens are stored in browser local storage
+- refresh tokens are used to renew expired sessions
+- `index.html` reads the saved auth state and redirects to login when needed
+- the backend exposes auth endpoints under `/api/auth/*`
+
+Primary auth routes:
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+
+## Admin Panel
+
+The admin UI lives at `admin.html`.
+
+Current admin capabilities include:
+
+- list and search users
+- inspect account details and recent save information
+- ban and unban accounts
+- reset player progress
+- nerf player stats
+- update email and admin access
+- reset passwords
+- revoke active sessions
+- view admin actions and server stats
+
+Access expectations:
+
+- localhost access is supported for development
+- local network admin access also allows `192.168.1.x` addresses
+
+## Gameplay Overview
+
+### Skills
+
+The game includes 24 skills grouped into six categories:
+
+- Hacking: Intrusion, Decryption, ICE Breaking, Daemon Coding
+- Netrunning: Deep Dive, Data Mining, Black ICE Combat, Neural Surfing
+- Street: Combat, Stealth, Street Cred, Smuggling
+- Tech: Cyberware Crafting, Weapon Modding, Vehicle Tuning, Drone Engineering
+- Fixer: Trading, Corpo Infiltration, Info Brokering, Fencing
+- Ripper: Cyberware Installation, Biotech, Neural Enhancement, Chrome Surgery
+
+### Core Systems
+
+- skill XP and level progression to 99
+- per-activity mastery progression
+- combat with enemies, loot, and abilities
+- crafting, equipment, consumables, and cyberware
+- prestige progression and upgrades
+- rotating shop inventory
+- offline progress for time away from the game
+- server save upload and restore flow
+
+### Terminal Feed
+
+The bottom terminal is a core part of the UI.
+
+- `All` shows the event feed plus live hacking stream
+- `Loot`, `XP`, `Combat`, and `System` filters narrow the event feed
+- loot notifications are rendered with readable names and icons
+- repeated loot messages are merged to reduce offline progress spam
+
+## Save System
+
+NETRUNNER uses two save layers:
+
+- local browser save for instant persistence and offline progress timestamps
+- backend save storage in SQLite for authenticated persistence and admin inspection
+
+Save-related backend routes:
+
+- `POST /api/saves/upload`
+- `GET /api/saves/latest`
+- `GET /api/saves/list`
+- `GET /api/saves/:saveId`
+- `POST /api/saves/:saveId/restore`
+
+## Project Structure
+
+```text
 netrunner/
-├── index.html              # Main page
-├── css/main.css            # Cyberpunk styling
+├── index.html
+├── auth.html
+├── admin.html
+├── start-all.sh
+├── serve.sh
+├── css/
+│   └── main.css
 ├── js/
-│   ├── app.js              # Entry point
-│   ├── main.js             # Game instance
-│   ├── engine/             # Core systems
-│   │   ├── events.js       # Event bus
-│   │   ├── save.js         # Save/load
-│   │   ├── gameLoop.js     # Game loop
-│   │   └── offline.js      # Offline progress
-│   ├── systems/            # Game mechanics
-│   │   ├── skills.js       # Skill system
-│   │   ├── combat.js       # Combat engine
-│   │   └── player.js       # Player & achievements
-│   ├── ui/                 # UI system
-│   │   └── main.js         # UI manager
-│   └── data/               # Data definitions
-│       └── skillData.js    # All game data
+│   ├── app.js
+│   ├── main.js
+│   ├── data/
+│   │   ├── skillData.js
+│   │   └── worldData.js
+│   ├── engine/
+│   │   ├── events.js
+│   │   ├── gameLoop.js
+│   │   ├── offline.js
+│   │   └── save.js
+│   ├── systems/
+│   │   ├── abilities.js
+│   │   ├── combat.js
+│   │   ├── crafting.js
+│   │   ├── economy.js
+│   │   ├── equipment.js
+│   │   ├── inventory.js
+│   │   ├── passiveStats.js
+│   │   ├── player.js
+│   │   ├── prestige.js
+│   │   └── skills.js
+│   └── ui/
+│       ├── hackerTerminal.js
+│       └── main.js
+└── server/
+    ├── package.json
+    ├── server.js
+    ├── db.js
+    ├── middleware/
+    └── routes/
 ```
 
-## 🎮 Tips for Grinding
+## Development Notes
 
-1. **Unlock higher-level skills first** — they grant more XP
-2. **Farm common enemies** early to build currency
-3. **Craft cyberware** to boost your stats
-4. **Diversify** — rotate between skills to unlock synergies
-5. **Go AFK** — offline progress works up to 24 hours
-6. **Export saves** before major resets
+- there is no frontend bundler or transpiler
+- edit files directly and reload the browser
+- backend code lives entirely in `server/`
+- the frontend is expected to run on a static host while the API runs on port `3000`
+- `server/game.db` is a local runtime file and should not be committed
 
-## 🚀 Future Expansions
+## Common Tasks
 
-- More skills and activities
-- Prestige/Prestige system
-- Trading market
-- Guilds/factions
-- Leaderboards
-- Mobile optimization
-- Dark/Light theme toggle
+### Install Backend Dependencies
 
-## 🐛 Known Issues
+```bash
+cd server
+npm install
+```
 
-- None yet! Report bugs at the GitHub repo
+### Run Backend Only
 
-## 📝 License
+```bash
+cd server
+npm run server
+```
 
-Free to use, modify, and distribute
+### Run Backend in Watch Mode
 
----
+```bash
+cd server
+npm run dev
+```
 
-**Enjoy the grind, runner! ⚡**
+### Start Frontend Only
+
+```bash
+python3 -m http.server 8000
+```
+
+## Troubleshooting
+
+### Login Page Loads but Auth Fails
+
+- make sure the backend is running on port `3000`
+- open `http://localhost:3000/health` and confirm it returns JSON
+- confirm the frontend is loaded from `http://localhost:8000`, not directly from `file://`
+
+### Admin Page Says Token Is Invalid or Expired
+
+- log in again through `auth.html`
+- confirm `localStorage` contains the auth tokens
+- make sure the backend is reachable at `http://localhost:3000`
+
+### Script Cannot Start the Frontend
+
+- install Python 3 or Node.js
+- if a port is already in use, stop the existing service or choose another port with `PORT=...`
+
+### Script Cannot Start the Backend
+
+- install Node.js and npm
+- run `cd server && npm install`
+- verify `server/server.js` exists and `http://localhost:3000/health` responds
+
+## GitHub Workflow
+
+Typical update flow:
+
+```bash
+git status
+git add .
+git commit -m "Your message"
+git push origin main
+```
+
+## License
+
+MIT
