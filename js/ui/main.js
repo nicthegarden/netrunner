@@ -1,6 +1,6 @@
 import { events, EVENTS } from '../engine/events.js';
 import { getGame } from '../main.js';
-import { SHOP_ITEMS, ITEMS, SKILLS, SKILL_ABILITIES, PASSIVE_BONUSES, ACTIVITIES, BACKGROUND_HACK_SKILLS, BACKGROUND_HACK_EFFICIENCY, getItemTooltip, getRotatingShopItems } from '../data/skillData.js';
+import { SHOP_ITEMS, ITEMS, SKILLS, SKILL_ABILITIES, PASSIVE_BONUSES, ACTIVITIES, BACKGROUND_HACK_SKILLS, BACKGROUND_HACK_EFFICIENCY, getItemTooltip, getRotatingShopItems, SHOP_ROTATION_INTERVAL_MS } from '../data/skillData.js';
 import { FACTIONS } from '../data/worldData.js';
 import { CRAFT_RECIPES } from '../systems/crafting.js';
 import { PRESTIGE_UPGRADES } from '../systems/prestige.js';
@@ -14,6 +14,7 @@ export class UI {
     this.inventoryFilter = 'all';
     this.shopFilter = 'all';
     this.shopPage = 0;
+    this.shopRotationSeed = Math.floor(Date.now() / SHOP_ROTATION_INTERVAL_MS);
     this.pickerOverlay = null;
     this._eventUnsubs = [];
     this.hackerTerminal = new HackerTerminal();
@@ -684,6 +685,7 @@ export class UI {
           <div class="inventory-actions">
             ${isEquippable ? `<button class="btn-small" data-action="equip-item" data-item-id="${item.id}">Equip</button>` : ''}
             ${canSell ? `<button class="btn-small" data-action="sell-item" data-item-id="${item.id}" data-quantity="1">Sell (${item.value} E$)</button>` : ''}
+            ${canSell && item.quantity > 1 ? `<button class="btn-small btn-danger" data-action="sell-item" data-item-id="${item.id}" data-quantity="${item.quantity}">Sell All</button>` : ''}
           </div>
         </div>`;
       });
@@ -730,8 +732,9 @@ export class UI {
     const container = document.getElementById('shop-container');
     if (!container) return;
 
+    this.shopRotationSeed = Math.floor(Date.now() / SHOP_ROTATION_INTERVAL_MS);
     const activeSkillId = this.currentSkill || game.skillManager.getSkillsByCategory(this.currentCategory)[0]?.id || null;
-    const rotatingItems = getRotatingShopItems(game.economy.getCurrency(), game.skillManager.getTotalLevel(), activeSkillId);
+    const rotatingItems = getRotatingShopItems(game.economy.getCurrency(), game.skillManager.getTotalLevel(), activeSkillId, this.shopRotationSeed);
     const filteredShop = this.shopFilter === 'all'
       ? rotatingItems
       : rotatingItems.filter(item => item.category === this.shopFilter || item.linkedSkill === this.shopFilter);
@@ -739,6 +742,8 @@ export class UI {
     const maxPage = Math.max(0, Math.ceil(filteredShop.length / pageSize) - 1);
     this.shopPage = Math.min(this.shopPage, maxPage);
     const pagedItems = filteredShop.slice(this.shopPage * pageSize, (this.shopPage + 1) * pageSize);
+    const msRemaining = SHOP_ROTATION_INTERVAL_MS - (Date.now() % SHOP_ROTATION_INTERVAL_MS);
+    const minutesRemaining = Math.max(1, Math.ceil(msRemaining / 60000));
     let html = `<div class="shop-summary">Curated rollout: ${rotatingItems.length} items shown from ${SHOP_ITEMS.length}+ total listings. Current spotlight: ${activeSkillId ? activeSkillId.replace(/_/g, ' ') : 'mixed market'}.</div>
       <div class="shop-toolbar">
         <button class="btn-small ${this.shopFilter === 'all' ? 'btn-danger' : ''}" data-action="set-shop-filter" data-filter="all">All</button>
@@ -747,6 +752,8 @@ export class UI {
         <button class="btn-small ${this.shopFilter === 'cyberware' ? 'btn-danger' : ''}" data-action="set-shop-filter" data-filter="cyberware">Cyberware</button>
         <button class="btn-small ${this.shopFilter === 'material' ? 'btn-danger' : ''}" data-action="set-shop-filter" data-filter="material">Materials</button>
         <button class="btn-small ${this.shopFilter === 'consumable' ? 'btn-danger' : ''}" data-action="set-shop-filter" data-filter="consumable">Consumables</button>
+        <button class="btn-small" data-action="refresh-shop-rollout">Rotate Preview</button>
+        <span class="shop-page-label">Next market cycle in ~${minutesRemaining} min</span>
       </div>
       <div class="shop-grid">`;
     const rarityColors = {
@@ -1094,7 +1101,7 @@ export class UI {
           { type: 'balance', text: 'Shared Grind Load Debuff — Every extra simultaneous grind lowers payout efficiency for all active grinds, now tuned to a softer progression-friendly curve: 82% at 2 grinds, 68% at 3 grinds, and 58% at 4 grinds.' },
           { type: 'feature', text: 'Linked Item Catalog — The game now supports a massive generated catalog of 1000+ linked items with rarity, pricing, linked skills, and perk metadata.' },
           { type: 'feature', text: 'Inventory Perk Cards — Inventory entries now display perk text and linked-skill context so loot is readable instead of just being a list of names.' },
-          { type: 'feature', text: 'Rotating Store Rollout — The shop now surfaces a curated slice of the larger item pool based on your progression, current skill focus, and available cash, with category filters and pagination.' },
+          { type: 'feature', text: 'Rotating Store Rollout — The shop now surfaces a curated slice of the larger item pool based on your progression, current skill focus, and available cash, with timed market rotation, category filters, and pagination.' },
           { type: 'feature', text: 'Admin Access Controls — Admin user details now include password reset, session revocation, email/admin access management, and recent login session visibility.' },
         ],
       },
@@ -1472,6 +1479,8 @@ export class UI {
     } else if (view === 'achievements') {
       this.renderAchievementsView();
     } else if (view === 'shop') {
+      const game = getGame();
+      if (game?.achievements) game.achievements.unlock('market_watcher');
       this.renderShopView();
     } else if (view === 'crafting') {
       this.renderCraftingView();

@@ -50,6 +50,7 @@ export class Achievements {
       first_kill: { id: 'first_kill', name: 'First Blood', description: 'Defeat your first enemy', unlocked: false },
       rich: { id: 'rich', name: 'Well-Off', description: 'Have 10,000 Eurodollars', unlocked: false },
       collector: { id: 'collector', name: 'Collector', description: 'Own 10 different item types', unlocked: false },
+      market_watcher: { id: 'market_watcher', name: 'Market Watcher', description: 'Open the rotating night market and inspect the live rollout', unlocked: false },
     };
   }
 

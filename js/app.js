@@ -114,6 +114,10 @@ function focusCurrentSkill(skillId) {
 function navigateToView(view) {
   if (!ui) return;
   ui.navigate(view);
+  const game = getGame();
+  if (view === 'shop' && game?.achievements) {
+    game.achievements.unlock('market_watcher');
+  }
   
   // Clear nav active state for non-skill views
   document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -419,9 +423,11 @@ function equipItemHandler(itemId) {
 function sellItemHandler(itemId, quantity) {
   const game = getGame();
   if (!game) return;
+  const itemDef = game.inventory._findItemDef(itemId);
   const success = game.inventory.sellItem(itemId, quantity, game.economy);
   if (success) {
-    ui.notify(`Sold ${quantity}x ${itemId.replace(/_/g, ' ')}!`, 'info');
+    const itemName = itemDef?.name || itemId.replace(/_/g, ' ');
+    ui.notify(`Sold ${quantity}x ${itemName}!`, 'info');
     ui.renderInventoryView();
     ui.updateCurrencyDisplay();
   } else {
@@ -589,6 +595,14 @@ document.addEventListener('click', (e) => {
   if (shopPage && !shopPage.disabled) {
     ui.shopPage += shopPage.dataset.direction === 'next' ? 1 : -1;
     ui.shopPage = Math.max(0, ui.shopPage);
+    ui.renderShopView();
+    return;
+  }
+
+  const refreshShopRollout = match('[data-action="refresh-shop-rollout"]');
+  if (refreshShopRollout) {
+    ui.shopRotationSeed += 1;
+    ui.shopPage = 0;
     ui.renderShopView();
     return;
   }

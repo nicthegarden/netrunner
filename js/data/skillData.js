@@ -51,6 +51,7 @@ export const BACKGROUND_HACK_EFFICIENCY = 0.75;
 export const MULTIGRIND_LOAD_PENALTY = 0.22;
 export const MULTIGRIND_MIN_EFFICIENCY = 0.5;
 export const SHOP_ROLLOUT_SIZE = 36;
+export const SHOP_ROTATION_INTERVAL_MS = 30 * 60 * 1000;
 
 export function getMultiGrindEfficiency(activeCount) {
   const count = Math.max(1, Number(activeCount) || 1);
@@ -264,6 +265,23 @@ export const ITEMS = {
     CHRONO_ARMOR: { id: 'chrono_armor', name: 'Chrono-Infused Armor', type: 'armor', icon: '⏳', defense: 13, speedBoost: 0.25, stackable: false, value: 8500, rarity: 'legendary', description: '+13 defense, -25% action duration' },
     GODLIKE_IMPLANT: { id: 'godlike_implant', name: 'Godlike Quantum Core', type: 'cyberware', icon: '⭐', damage: 10, defense: 10, xpBoost: 0.20, lootBoost: 0.30, currencyBoost: 0.20, parallelHacking: true, stackable: false, value: 15000, rarity: 'legendary', description: '+20% XP, +20% currency, +30% loot drops, parallel hacking' },
     NEURAL_NEXUS: { id: 'neural_nexus', name: 'Neural Nexus Hub', type: 'cyberware', icon: '🧠', damage: 0, defense: 8, xpBoost: 0.15, parallelHacking: true, stackable: false, value: 13000, rarity: 'legendary', description: '+15% XP to all skills, +8 defense, parallel hacking' },
+
+    // New handcrafted cyberpunk grind/combat gear
+    GHOSTWALK_CLOAK: { id: 'ghostwalk_cloak', name: 'Ghostwalk Cloak', type: 'armor', icon: '🫥', defense: 7, speedBoost: 0.12, stackable: false, value: 2400, rarity: 'rare', linkedSkill: 'stealth', description: '+7 defense • +12% action speed • linked to stealth' },
+    BLACKWALL_ROUTER: { id: 'blackwall_router', name: 'Blackwall Router Spine', type: 'cyberware', icon: '📡', defense: 4, xpBoost: 0.12, parallelHacking: true, stackable: false, value: 6200, rarity: 'epic', linkedSkill: 'deep_dive', description: '+4 defense • +12% XP gain • enables parallel grinding • linked to deep dive' },
+    STREETPHANTOM_OS: { id: 'streetphantom_os', name: 'Streetphantom OS', type: 'cyberware', icon: '🌆', damage: 4, speedBoost: 0.1, currencyBoost: 0.12, stackable: false, value: 5400, rarity: 'epic', linkedSkill: 'smuggling', description: '+4 damage • +10% action speed • +12% currency gain • linked to smuggling' },
+    CORPO_BREAKER: { id: 'corpo_breaker', name: 'Corpo Breaker Shotgun', type: 'weapon', icon: '💥', damage: 18, stackable: false, value: 4800, rarity: 'epic', linkedSkill: 'combat', description: '+18 damage • linked to combat' },
+    ICEPICK_ARRAY: { id: 'icepick_array', name: 'ICEpick Array', type: 'cyberware', icon: '🧊', damage: 6, lootBoost: 0.14, stackable: false, value: 5600, rarity: 'epic', linkedSkill: 'ice_breaking', description: '+6 damage • +14% item drops • linked to ice breaking' },
+    NEON_TALON: { id: 'neon_talon', name: 'Neon Talon Monoblade', type: 'weapon', icon: '🗡️', damage: 16, lifeSteal: 0.05, stackable: false, value: 4600, rarity: 'epic', linkedSkill: 'combat', description: '+16 damage • 5% life steal • linked to combat' },
+    FIXER_EXONODE: { id: 'fixer_exonode', name: 'Fixer Exonode Cache', type: 'cyberware', icon: '📈', defense: 3, currencyBoost: 0.18, lootBoost: 0.08, stackable: false, value: 5900, rarity: 'epic', linkedSkill: 'trading', description: '+3 defense • +18% currency gain • +8% item drops • linked to trading' },
+    DRONE_SWARM_LINK: { id: 'drone_swarm_link', name: 'Drone Swarm Link', type: 'cyberware', icon: '🛸', damage: 5, xpBoost: 0.08, speedBoost: 0.08, stackable: false, value: 5200, rarity: 'rare', linkedSkill: 'drone_engineering', description: '+5 damage • +8% XP gain • +8% action speed • linked to drone engineering' },
+    CHROME_HARVESTER: { id: 'chrome_harvester', name: 'Chrome Harvester Rig', type: 'armor', icon: '🦾', defense: 9, lootBoost: 0.12, stackable: false, value: 4100, rarity: 'rare', linkedSkill: 'chrome_surgery', description: '+9 defense • +12% item drops • linked to chrome surgery' },
+    DAEMON_FORGE: { id: 'daemon_forge', name: 'Daemon Forge Core', type: 'cyberware', icon: '♨️', damage: 7, xpBoost: 0.1, stackable: false, value: 6100, rarity: 'epic', linkedSkill: 'daemon_coding', description: '+7 damage • +10% XP gain • linked to daemon coding' },
+    ORBITAL_LENS: { id: 'orbital_lens', name: 'Orbital Recon Lens', type: 'cyberware', icon: '🔭', damage: 3, speedBoost: 0.14, lootBoost: 0.1, stackable: false, value: 6400, rarity: 'epic', linkedSkill: 'intrusion', description: '+3 damage • +14% action speed • +10% item drops • linked to intrusion' },
+    NEUROCLOCK_JACK: { id: 'neuroclock_jack', name: 'Neuroclock Jack', type: 'cyberware', icon: '🧠', damage: 0, defense: 4, speedBoost: 0.2, xpBoost: 0.08, parallelHacking: true, stackable: false, value: 7800, rarity: 'epic', linkedSkill: 'intrusion', description: '+20% action speed • +8% XP gain • +4 defense • enables parallel grinding • tuned for hacking runs' },
+    BLOODLOTUS_STIM: { id: 'bloodlotus_stim', name: 'Bloodlotus Stim', type: 'consumable', icon: '🌺', stackable: true, value: 420, rarity: 'rare', linkedSkill: 'combat', description: 'High-end combat booster linked to combat loadouts' },
+    QUANTUM_PATCH: { id: 'quantum_patch', name: 'Quantum Patch', type: 'consumable', icon: '🩹', stackable: true, value: 380, rarity: 'rare', linkedSkill: 'biotech', description: 'Recovery and grind sustain patch linked to biotech' },
+    NIGHTMARKET_CASE: { id: 'nightmarket_case', name: 'Night Market Case', type: 'material', icon: '🧳', stackable: true, value: 280, rarity: 'rare', linkedSkill: 'fencing', description: 'Premium trade bundle linked to fencing' },
 
     // Parallel hacking enabler (mid-tier entry point)
     MULTITHREADED_LINK: { id: 'multithreaded_link', name: 'Multithreaded Neural Link', type: 'cyberware', icon: '🔗', damage: 0, defense: 2, parallelHacking: true, stackable: false, value: 2500, rarity: 'uncommon', description: '+2 defense, enables background hacking while doing other activities' },
@@ -958,7 +976,8 @@ export const SHOP_ITEMS = [
    { id: 'loot_enhancer', name: 'Loot Enhancer Module', icon: '💎', cost: 10000, category: 'cyberware', tier: 4, description: '+20% material drops from all skills', costPerformance: 'exotic' },
    { id: 'wealth_accumulator', name: 'Wealth Accumulator', icon: '💰', cost: 12500, category: 'cyberware', tier: 4, description: '+25% Eurodollars gained', costPerformance: 'exotic' },
    { id: 'neural_daemon', name: 'Neural Daemon', icon: '👾', cost: 8500, category: 'cyberware', tier: 4, description: '+5 damage, +8 defense, parallel hacking', costPerformance: 'exotic' },
-     { id: 'ice_shield', name: 'ICE Shield', icon: '❄️', cost: 7000, category: 'armor', tier: 4, description: '+12 defense, immune to slow effects', costPerformance: 'defensive' },
+   { id: 'neuroclock_jack', name: 'Neuroclock Jack', icon: '🧠', cost: 9200, category: 'cyberware', tier: 4, description: '+20% action speed, +8% XP, +4 defense, parallel hacking for hacking grinds', costPerformance: 'grind-booster', linkedSkill: 'intrusion', requiredLevel: 30 },
+      { id: 'ice_shield', name: 'ICE Shield', icon: '❄️', cost: 7000, category: 'armor', tier: 4, description: '+12 defense, immune to slow effects', costPerformance: 'defensive' },
 ];
 
 const GENERATED_ITEM_THEMES = {
@@ -1104,10 +1123,11 @@ const GENERATED_CATALOG = generateLinkedCatalog();
 Object.assign(ITEMS, GENERATED_CATALOG.generatedItems);
 SHOP_ITEMS.push(...GENERATED_CATALOG.generatedShopItems);
 
-export function getRotatingShopItems(currency = 0, totalLevel = 1, activeSkillId = null) {
+export function getRotatingShopItems(currency = 0, totalLevel = 1, activeSkillId = null, rotationSeed = 0) {
   const normalizedLevel = Math.max(1, Number(totalLevel) || 1);
   const normalizedCurrency = Math.max(0, Number(currency) || 0);
   const progressionScore = normalizedLevel + Math.floor(normalizedCurrency / 5000);
+  const rotationOffset = Math.max(0, Number(rotationSeed) || 0) % Math.max(1, SHOP_ITEMS.length);
 
   const weighted = SHOP_ITEMS
     .filter(item => (item.requiredLevel || 1) <= normalizedLevel + 20)
@@ -1121,7 +1141,8 @@ export function getRotatingShopItems(currency = 0, totalLevel = 1, activeSkillId
     });
 
   const pool = weighted.length >= SHOP_ROLLOUT_SIZE ? weighted : SHOP_ITEMS;
-  return pool.slice(0, SHOP_ROLLOUT_SIZE);
+  const rotated = [...pool.slice(rotationOffset), ...pool.slice(0, rotationOffset)];
+  return rotated.slice(0, SHOP_ROLLOUT_SIZE);
 }
 
 // ==========================================
