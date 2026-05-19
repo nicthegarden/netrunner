@@ -12,6 +12,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Deploy notification
         run: |
@@ -27,18 +29,14 @@ jobs:
           echo "- **Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status:** ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
 
-      - name: Create release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: v-${{ github.run_id }}
-          name: Production Release ${{ github.run_id }}
-          body: |
-            Automated production deployment
-            Commit: ${{ github.sha }}
-            Triggered by: ${{ github.actor }}
-          draft: false
-          prerelease: false
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log deployment metadata
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Run ID: ${{ github.run_id }}"
+          echo "Run Number: ${{ github.run_number }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Commit SHA: ${{ github.sha }}"
 
   # Job 2: Post-Deployment Notification
   notify:
@@ -52,6 +50,8 @@ jobs:
           if [ "${{ needs.deploy.result }}" == "success" ]; then
             echo "✅ Deployment successful!"
             echo "The game is ready for production access"
+            echo "Repository: github.com/nicthegarden/netrunner"
+            echo "Branch: main"
           else
             echo "❌ Deployment failed!"
             echo "Check the logs above for details"
