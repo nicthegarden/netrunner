@@ -28,18 +28,17 @@ jobs:
           echo "- **Status:** ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
 
       - name: Create release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: v-${{ github.run_id }}
-          release_name: Production Release ${{ github.run_id }}
+          tag: v-${{ github.run_id }}
+          name: Production Release ${{ github.run_id }}
           body: |
             Automated production deployment
             Commit: ${{ github.sha }}
             Triggered by: ${{ github.actor }}
           draft: false
           prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   # Job 2: Post-Deployment Notification
   notify:
