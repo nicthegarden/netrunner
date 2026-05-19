@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "gaming-ui-state-management": {
+      "source": "theorcdev/8bitcn-ui",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/gaming-ui-state-management/SKILL.md",
+      "computedHash": "c1d133020b3dec4718da2916022df652daabc7fdb13d8939b044b5d227aee27a"
+    }
+  }
+}
