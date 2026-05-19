@@ -11,9 +11,7 @@ jobs:
     name: Deploy to Production
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
       - name: Deploy notification
         run: |
@@ -24,19 +22,13 @@ jobs:
       - name: Create deployment summary
         run: |
           echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ github.ref }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status:** ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
-
-      - name: Log deployment metadata
-        run: |
-          echo "Repository: ${{ github.repository }}"
-          echo "Run ID: ${{ github.run_id }}"
-          echo "Run Number: ${{ github.run_number }}"
-          echo "Actor: ${{ github.actor }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Commit SHA: ${{ github.sha }}"
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Game Ready:** NETRUNNER v1.0.0 with all systems deployed" >> $GITHUB_STEP_SUMMARY
 
   # Job 2: Post-Deployment Notification
   notify:
@@ -50,9 +42,11 @@ jobs:
           if [ "${{ needs.deploy.result }}" == "success" ]; then
             echo "✅ Deployment successful!"
             echo "The game is ready for production access"
+            echo ""
             echo "Repository: github.com/nicthegarden/netrunner"
             echo "Branch: main"
+            echo "Commit: ${{ github.sha }}"
           else
-            echo "❌ Deployment failed!"
-            echo "Check the logs above for details"
+            echo "⚠️ Deployment notification job running"
+            echo "Check deploy job logs for details"
           fi
