@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": ".claude/skills/gaming-ui-state-management/SKILL.md",
       "computedHash": "c1d133020b3dec4718da2916022df652daabc7fdb13d8939b044b5d227aee27a"
+    },
+    "webapp-testing": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/webapp-testing/SKILL.md",
+      "computedHash": "ad5b1fc52807e9afa4635e59218a026b164dc58b6c3f41b0f7c644dcd6ccf572"
     }
   }
 }
